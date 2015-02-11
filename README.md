@@ -2,7 +2,7 @@
 
 __Love Text__ is a simple, lightweight and extensible with Lua text editor.
 
-#Requirenments
+#Requirements
 
 * Gtk+ 3 libraries
 * [Extensions](https://github.com/FelipeFS/lovetextextensions) (optional)
