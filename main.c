@@ -121,6 +121,8 @@ static void main_application_activate(GApplication *application, gpointer user_d
 	if ((preferences->use_custom_gtk_theme) && (preferences->gtk_theme)) {
 		g_printf("[MESSAGE] Setting custom theme.\n");
 		g_object_set(settings, "gtk-theme-name", preferences->gtk_theme, NULL);
+	} else {
+		g_printf("[MESSAGE] Setting no custom theme.\n");
 	}
 	
 	struct cwindow_handler *window_handler = alloc_window_handler(preferences);

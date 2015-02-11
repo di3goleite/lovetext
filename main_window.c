@@ -69,9 +69,7 @@ static void initialize_lua(struct cwindow_handler *window_handler, struct cprefe
 	
 	luaL_openlibs(window_handler->lua);
 	if (!window_handler->lua) {
-		#ifdef DEBUG_MODE
 		g_printf("[MESSAGE] Failed to create lua state.\n");
-		#endif
 		return;
 	} else {
 		g_printf("[MESSAGE] Lua state created.\n");
@@ -306,7 +304,9 @@ static void menu_item_new_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_new(GtkWidget *w, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_new_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_new_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_open_activate(GtkWidget *widget, gpointer user_data)
@@ -381,7 +381,9 @@ static void menu_item_open_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_open(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_open_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_open_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
@@ -457,7 +459,9 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_save(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_save_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_save_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
@@ -505,7 +509,9 @@ static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_save_as(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_save_as_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_save_as_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_preferences_activate(GtkWidget *widget, gpointer user_data)
@@ -520,7 +526,9 @@ static void menu_item_preferences_activate(GtkWidget *widget, gpointer user_data
 
 static void accel_preferences(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_preferences_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_preferences_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_close_activate(GtkWidget *widget, gpointer user_data)
@@ -540,7 +548,9 @@ static void menu_item_close_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_close(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_close_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_close_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_exit_activate(GtkWidget *widget, gpointer user_data)
@@ -550,7 +560,9 @@ static void menu_item_exit_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_exit(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_exit_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_exit_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_undo_activate(GtkWidget *widget, gpointer user_data)
@@ -577,7 +589,9 @@ static void menu_item_undo_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_undo(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_undo_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_undo_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_redo_activate(GtkWidget *widget, gpointer user_data)
@@ -604,7 +618,9 @@ static void menu_item_redo_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_redo(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_redo_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_redo_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_copy_activate(GtkWidget *widget, gpointer user_data)
@@ -628,7 +644,9 @@ static void menu_item_copy_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_copy(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_copy_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_copy_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_paste_activate(GtkWidget *widget, gpointer user_data)
@@ -652,7 +670,9 @@ static void menu_item_paste_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_paste(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_paste_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_paste_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_cut_activate(GtkWidget *widget, gpointer user_data)
@@ -676,7 +696,9 @@ static void menu_item_cut_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_cut(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_cut_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_cut_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_delete_activate(GtkWidget *widget, gpointer user_data)
@@ -702,7 +724,9 @@ static void menu_item_delete_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_delete(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_delete_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_delete_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_next_page_activate(GtkWidget *widget, gpointer user_data)
@@ -719,7 +743,10 @@ static void menu_item_next_page_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_next_page(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_next_page_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		g_printf("[MESSAGE] Activate \"next_page\" accelerator.\n");
+		menu_item_next_page_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_previous_page_activate(GtkWidget *widget, gpointer user_data)
@@ -736,7 +763,10 @@ static void menu_item_previous_page_activate(GtkWidget *widget, gpointer user_da
 
 static void accel_previous_page(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_previous_page_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		g_printf("[MESSAGE] Activate \"previous_page\" accelerator.\n");
+		menu_item_previous_page_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_toggle_menu_bar_activate(GtkWidget *widget, gpointer user_data)
@@ -752,7 +782,9 @@ static void menu_item_toggle_menu_bar_activate(GtkWidget *widget, gpointer user_
 
 static void accel_toggle_menu_bar(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_toggle_menu_bar_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_toggle_menu_bar_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_toggle_status_bar_activate(GtkWidget *widget, gpointer user_data)
@@ -768,7 +800,9 @@ static void menu_item_toggle_status_bar_activate(GtkWidget *widget, gpointer use
 
 static void accel_toggle_status_bar(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_toggle_status_bar_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_toggle_status_bar_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_toggle_fullscreen_activate(GtkWidget *widget, gpointer user_data)
@@ -786,7 +820,9 @@ static void menu_item_toggle_fullscreen_activate(GtkWidget *widget, gpointer use
 
 static void accel_toggle_fullscreen(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_toggle_fullscreen_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_toggle_fullscreen_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_search_activate(GtkWidget *widget, gpointer user_data)
@@ -824,7 +860,9 @@ static void menu_item_search_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_search(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_search_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_search_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_replace_activate(GtkWidget *widget, gpointer user_data)
@@ -851,7 +889,9 @@ static void menu_item_replace_activate(GtkWidget *widget, gpointer user_data)
 
 static void accel_replace(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_replace_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_replace_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_refresh_plugins_activate(GtkWidget *widget, gpointer user_data)
@@ -887,7 +927,9 @@ static void menu_item_refresh_plugins_activate(GtkWidget *widget, gpointer user_
 
 static void accel_refresh_plugins(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
-	menu_item_refresh_plugins_activate(NULL, user_data);
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_refresh_plugins_activate(NULL, user_data);
+	}
 }
 
 static void menu_item_about_activate(GtkWidget *widget, gpointer user_data)
@@ -932,11 +974,6 @@ THE SOFTWARE.");
 	gtk_window_set_transient_for(window_about, window_handler->window);
 	gtk_dialog_run(window_about);
 	gtk_widget_destroy(window_about);
-}
-
-static void accel_about_plugins(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
-{
-	menu_item_about_activate(NULL, user_data);
 }
 
 static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *event, gpointer user_data)
@@ -1056,15 +1093,25 @@ static gboolean entry_search_key_release_event(GtkWidget *widget,  GdkEventKey *
 static gboolean source_view_key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	g_printf("[MESSAGE] Source View key press.\n");
+	gboolean handled = FALSE;
 	
+	g_printf("[MESSAGE] Source View key press.\n");
 	struct cbuffer_ref *buffer_ref = g_object_get_data(widget, "buf_ref");
 	
 	if (buffer_ref) {
 		gtk_source_search_settings_set_search_text(buffer_ref->search_settings, gtk_entry_get_text(window_handler->search_entry));
 	}
 	
-	return FALSE;
+	if (event->state & GDK_CONTROL_MASK) {
+		if (event->keyval == GDK_KEY_Page_Down) {
+			menu_item_next_page_activate(NULL, user_data);
+			handled = TRUE;
+		} else if (event->keyval == GDK_KEY_Page_Up) {
+			menu_item_previous_page_activate(NULL, user_data);
+			handled = TRUE;
+		}
+	}
+	return handled;
 }
 
 static gboolean source_view_key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
@@ -1086,6 +1133,18 @@ static gboolean source_view_key_release_event(GtkWidget *widget, GdkEventKey *ev
 			}
 		}
 	}
+	return FALSE;
+}
+
+static gboolean window_key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
+{
+	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	return FALSE;
+}
+
+static gboolean window_key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
+{
+	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	return FALSE;
 }
 
@@ -1176,9 +1235,6 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	GtkWidget *tab = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
 	GtkWidget *label = gtk_label_new("Untitled");
 	GtkWidget *button_close = gtk_button_new_from_icon_name("gtk-close", GTK_ICON_SIZE_BUTTON);
-	gtk_button_set_focus_on_click(button_close, FALSE);
-	gtk_widget_set_can_focus(label, FALSE);
-	gtk_widget_set_can_focus(tab, FALSE);
 	g_object_set_data(button_close, "buf_ref", buffer_ref);
 	g_signal_connect(button_close, "clicked", G_CALLBACK(button_close_tab_clicked), window_handler);
 	
@@ -1188,6 +1244,11 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	
 	buffer_ref->tab = tab;
 	buffer_ref->label = label;
+	
+	gtk_widget_set_can_focus(tab, FALSE);
+	gtk_widget_set_can_focus(label, FALSE);
+	gtk_widget_set_can_focus(button_close, FALSE);
+	gtk_button_set_focus_on_click(button_close, FALSE);
 	
 	GdkRGBA rgba;
 	rgba.red = 1.0;
@@ -1624,7 +1685,7 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 		g_cclosure_new(G_CALLBACK(accel_cut), window_handler, NULL));
 	
 	// Accelerators.
-	gtk_accel_group_connect(accelerator_group,
+	/*gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_Page_Down,
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
@@ -1633,7 +1694,7 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 		GDK_KEY_Page_Up,
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_previous_page), window_handler, NULL));
+		g_cclosure_new(G_CALLBACK(accel_previous_page), window_handler, NULL));*/
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_M,
 		GDK_CONTROL_MASK,
@@ -1697,6 +1758,11 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_S, GDK_CONTROL_MASK | GDK_SHIFT_MASK);
 	g_signal_connect(G_OBJECT(menu_item), "activate",
 		G_CALLBACK(menu_item_save_as_activate), window_handler);
+	gtk_menu_shell_append(menu, menu_item);
+	
+	menu_item = gtk_menu_item_new_with_label("Preferences");
+	g_signal_connect(G_OBJECT(menu_item), "activate",
+		G_CALLBACK(menu_item_preferences_activate), window_handler);
 	gtk_menu_shell_append(menu, menu_item);
 	
 	menu_item = gtk_menu_item_new_with_label("Close");
@@ -1823,6 +1889,10 @@ struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)malloc(sizeof(struct cwindow_handler));
 	window_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	
+	g_signal_connect(window_handler->window, "key-press-event", G_CALLBACK(window_key_press_event), window_handler);
+	g_signal_connect(window_handler->window, "key-release-event", G_CALLBACK(window_key_release_event), window_handler);
+	
 	window_handler->drag_and_drop = FALSE;
 	window_handler->lua = NULL;
 	gtk_window_set_icon_name(GTK_WINDOW(window_handler->window), "lovetext");

@@ -74,6 +74,7 @@ struct cpreferences *alloc_preferences()
 	preferences->show_menu_bar = FALSE;
 	preferences->show_status_bar = FALSE;
 	preferences->show_tool_bar = FALSE;
+	preferences->use_custom_gtk_theme = FALSE;
 	if (g_key_file_load_from_file(preferences->configuration_file,
 		preferences->configuration_file_path->str, G_KEY_FILE_NONE, NULL)) {
 		scheme_id = g_key_file_get_string(preferences->configuration_file,
