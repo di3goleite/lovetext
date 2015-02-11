@@ -1918,7 +1918,6 @@ struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
 	//gtk_notebook_set_show_border(window_handler->notebook, FALSE);
 	window_handler->box = gtk_vbox_new(FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(window_handler->box), menu_bar, FALSE, TRUE, 0);
-	gtk_application_set_menubar(window_handler->application_handler->application, menu_bar);
 	
 	gtk_box_pack_start(GTK_BOX(window_handler->box), window_handler->notebook, TRUE, TRUE, 0);
 	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->status_bar, FALSE, TRUE, 0);
