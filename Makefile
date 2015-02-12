@@ -8,13 +8,13 @@ CFLAGS += `pkg-config --cflags gtk+-3.0 gtksourceview-3.0 x11 lua`
 
 compile:
 	@echo 'Compiling module file.'
-	@$(CC) -g -w $(CFLAGS) -o module.o -c module.c
+	@$(CC) -g $(CFLAGS) -o module.o -c module.c
 	@echo 'Compiling main_window_preferences file.'
-	@$(CC) -g -w $(CFLAGS) -o main_window_preferences.o -c main_window_preferences.c
+	@$(CC) -g $(CFLAGS) -o main_window_preferences.o -c main_window_preferences.c
 	@echo 'Compiling main_window file.'
-	@$(CC) -g -w $(CFLAGS) -o main_window.o -c main_window.c
+	@$(CC) -g $(CFLAGS) -o main_window.o -c main_window.c
 	@echo 'Compiling main file.'
-	@$(CC) -g -w $(CFLAGS) -o main.o -c main.c
+	@$(CC) -g $(CFLAGS) -o main.o -c main.c
 	@echo 'Linking files.'
 	$(CC) -o ./lovetext *.o $(LDLIBS)
 	make clean

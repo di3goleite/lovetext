@@ -27,6 +27,7 @@ THE SOFTWARE.
 
 #ifndef _MODULE_H_
 #define _MODULE_H_
+#include <stdlib.h>
 #include <stdio.h>
 #include <gtk/gtk.h>
 #include <gtksourceview/gtksourceview.h>
