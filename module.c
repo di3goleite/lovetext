@@ -43,12 +43,17 @@ THE SOFTWARE.
 
 struct cpreferences *alloc_preferences()
 {
+	g_printf("[MESSAGE] Allocating preferences.\n");
 	struct cpreferences *preferences = malloc(sizeof(struct cpreferences));
+	g_printf("[MESSAGE] Structure allocated.\n");
 	
-	char *home_env = getenv("HOME");
+	g_printf("[MESSAGE] Receiving \"HOME\".\n");
+	//const gchar *home_env = getenv("HOME");
+	const gchar *home_env = g_get_home_dir();
+	g_printf("[MESSAGE] \"HOME\" received.\n");
 	if (home_env) {
-		g_printf("[MESSAGE] Your home path is \"%s\".\n", home_env);
 		preferences->home_path = g_string_new(home_env);
+		g_printf("[MESSAGE] Your home path is \"%s\".\n", preferences->home_path->str);
 	} else {
 		g_printf("[ERROR] Your home path is NULL, failed to recieve enviroment variable \"HOME\".\n");
 		preferences->home_path = NULL;
@@ -108,7 +113,8 @@ struct cpreferences *alloc_preferences()
 	if (preferences->configuration_file_path) {
 		g_printf("[MESSAGE] Trying to load configuration file from \"%s\".\n", preferences->configuration_file_path->str);
 		if (g_key_file_load_from_file(preferences->configuration_file,
-			preferences->configuration_file_path->str, G_KEY_FILE_NONE, NULL)) {
+		preferences->configuration_file_path->str, G_KEY_FILE_NONE, NULL)) {
+			g_printf("[MESSAGE] Configuration file loaded.\n");
 			scheme_id = g_key_file_get_string(preferences->configuration_file,
 				"editor",
 				"scheme_id",

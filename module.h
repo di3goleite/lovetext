@@ -43,6 +43,8 @@ THE SOFTWARE.
 #include <glib/gstring.h>
 #include <glib/glist.h>
 
+typedef void (* draw_layerf)(GtkWidget *widget, GtkTextViewLayer layer, cairo_t *cr);
+
 struct cbuffer_ref
 {
 	GString *file_name;
@@ -51,6 +53,7 @@ struct cbuffer_ref
 	GtkWidget *tab;
 	GtkWidget *label;
 	
+	draw_layerf previous_draw_layer;
 	
 	GtkSourceSearchContext *search_context;
 	GtkSourceSearchSettings *search_settings;

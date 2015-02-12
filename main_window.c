@@ -222,6 +222,7 @@ static void update_page_language(struct cwindow_handler *window_handler, struct 
 
 static void update_styles(struct cwindow_handler *window_handler)
 {
+	g_printf("[MESSAGE] Updating text editor schemes.\n");
 	gint pages_count = gtk_notebook_get_n_pages(window_handler->notebook);
 	gint i = 0;
 	
@@ -232,6 +233,16 @@ static void update_styles(struct cwindow_handler *window_handler)
 		buffer_ref = g_object_get_data(widget_page, "buf_ref");
 		if (buffer_ref) {
 			if (window_handler->preferences->scheme) {
+				gchar *scheme_id = NULL;
+				
+				if (window_handler->preferences->scheme) {
+					scheme_id = gtk_source_style_scheme_get_id(window_handler->preferences->scheme);
+				}
+				if (scheme_id) {
+					g_printf("[MESSAGE] Scheme \"%s\" set at page %i.\n", scheme_id, i);
+				} else {
+					g_printf("[MESSAGE] Scheme set at page %i.\n", i);
+				}
 				GtkSourceBuffer *source_buffer = gtk_text_view_get_buffer(buffer_ref->source_view);
 				gtk_source_buffer_set_style_scheme(source_buffer, window_handler->preferences->scheme);
 			}
@@ -1197,6 +1208,13 @@ static void button_close_tab_clicked(GtkWidget *widget, gpointer user_data)
 
 static void source_view_draw_layer(GtkWidget *widget, GtkTextViewLayer layer, cairo_t *cr)
 {
+	struct cbuffer_ref *buffer_ref = g_object_get_data(widget, "buf_ref");
+	if (buffer_ref) {
+		if (buffer_ref->previous_draw_layer) {
+			buffer_ref->previous_draw_layer(widget, layer, cr);
+		}
+	}
+	
 	if (layer == GTK_TEXT_VIEW_LAYER_ABOVE) {
 		// Draw above the text.
 		// Call a Lua function to draw.
@@ -1212,7 +1230,8 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	
 	GtkTextViewClass *source_view_class = G_OBJECT_GET_CLASS(buffer_ref->source_view);
 	if (source_view_class) {
-		source_view_class->draw_layer = source_view_draw_layer;
+		//buffer_ref->previous_draw_layer = source_view_class->draw_layer;
+		//source_view_class->draw_layer = source_view_draw_layer;
 	}
 	
 	gtk_source_view_set_show_line_marks(buffer_ref->source_view, TRUE);
