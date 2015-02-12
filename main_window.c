@@ -96,24 +96,30 @@ static void initialize_lua(struct cwindow_handler *window_handler, struct cprefe
 		lua_pushlightuserdata(window_handler->lua, window_handler->accelerator_group);
 		lua_settable(window_handler->lua, -3);
 		
-		lua_pushstring(window_handler->lua, "config_path");
-		lua_pushstring(window_handler->lua, preferences->program_path->str);
-		lua_settable(window_handler->lua, -3);
-		
+		if (preferences->program_path) {
+			lua_pushstring(window_handler->lua, "config_path");
+			lua_pushstring(window_handler->lua, preferences->program_path->str);
+			lua_settable(window_handler->lua, -3);
+		}
 	}
 	lua_pop(window_handler->lua, 1);
 	
 	// Load base script.
-	GString *base_full_name = g_string_new(preferences->program_path->str);
-	base_full_name = g_string_append(base_full_name, "/base.lua");
-	
-	luaL_loadfile(window_handler->lua, base_full_name->str);
-	if (lua_pcall(window_handler->lua, 0, 0, 0) != LUA_OK) {
-		g_printf("[ERROR] Fail to load lua script \"%s\".\n", base_full_name->str);
-	} else {
-		g_printf("[MESSAGE] Lua script \"%s\" loaded.\n", base_full_name->str);
+	GString *base_full_name = NULL;
+	if (preferences->program_path) {
+		base_full_name = g_string_new(preferences->program_path->str);
+		base_full_name = g_string_append(base_full_name, "/base.lua");
 	}
-	g_string_free(base_full_name, TRUE);
+	if (base_full_name) {
+		luaL_loadfile(window_handler->lua, base_full_name->str);
+		if (lua_pcall(window_handler->lua, 0, 0, 0) != LUA_OK) {
+			g_printf("[ERROR] Fail to load lua script \"%s\".\n", base_full_name->str);
+		} else {
+			g_printf("[MESSAGE] Lua script \"%s\" loaded.\n", base_full_name->str);
+		}
+		g_string_free(base_full_name, TRUE);
+		base_full_name = NULL;
+	}
 	
 	// Call the initialization function.
 	lua_getglobal(window_handler->lua, "editor");
@@ -138,35 +144,40 @@ static void initialize_lua(struct cwindow_handler *window_handler, struct cprefe
 	DIR *dir;
 	struct dirent *ent;
 	int size;
-	dir = opendir(preferences->extension_path->str);
-	if (dir) {
-		ent = readdir(dir);
-		while (ent != NULL) {
-			unsigned char *name = ent->d_name;
-			if (name[0] == '.') {
-				//g_printf("Ignoring hidden item \"%s\".\n", name);
-			} else {
-				GString *source_full_name = g_string_new(preferences->extension_path->str);
-				source_full_name = g_string_append(source_full_name, "/");
-				source_full_name = g_string_append(source_full_name, name);
-				if (ent->d_type == DT_REG) {
-					unsigned char *name_extension = strrchr(name, '.');
-					if (name_extension != NULL ) {
-						if (strcmp(name_extension, ".lua") == 0) {
-							luaL_loadfile(window_handler->lua, source_full_name->str);
-							if (lua_pcall(window_handler->lua, 0, 0, 0) != LUA_OK) {
-								g_printf("[ERROR] Fail to load lua script \"%s\".\n", source_full_name->str);
-							} else {
-								g_printf("[MESSAGE] Lua script \"%s\" loaded.\n", source_full_name->str);
+	if (preferences->extension_path) {
+		g_printf("[MESSAGE] Loading extensions.\n");
+		dir = opendir(preferences->extension_path->str);
+		if (dir) {
+			ent = readdir(dir);
+			while (ent != NULL) {
+				unsigned char *name = ent->d_name;
+				if (name[0] == '.') {
+					//g_printf("Ignoring hidden item \"%s\".\n", name);
+				} else {
+					GString *source_full_name = g_string_new(preferences->extension_path->str);
+					source_full_name = g_string_append(source_full_name, "/");
+					source_full_name = g_string_append(source_full_name, name);
+					if (ent->d_type == DT_REG) {
+						unsigned char *name_extension = strrchr(name, '.');
+						if (name_extension != NULL ) {
+							if (strcmp(name_extension, ".lua") == 0) {
+								luaL_loadfile(window_handler->lua, source_full_name->str);
+								if (lua_pcall(window_handler->lua, 0, 0, 0) != LUA_OK) {
+									g_printf("[ERROR] Fail to load lua script \"%s\".\n", source_full_name->str);
+								} else {
+									g_printf("[MESSAGE] Lua script \"%s\" loaded.\n", source_full_name->str);
+								}
 							}
 						}
 					}
+					g_string_free(source_full_name, NULL);
 				}
-				g_string_free(source_full_name, NULL);
+				ent = readdir(dir);
 			}
-			ent = readdir(dir);
+			closedir(dir);
 		}
-		closedir(dir);
+	} else {
+		g_printf("[ERROR] Ignoring extensions. Extensions path not set.\n");
 	}
 	
 	// Call the plugins initialization functions
@@ -187,6 +198,7 @@ static void initialize_lua(struct cwindow_handler *window_handler, struct cprefe
 	} else {
 		lua_pop(window_handler->lua, 1);
 	}
+	g_printf("[MESSAGE] Lua initialized.\n");
 }
 
 static void update_page_language(struct cwindow_handler *window_handler, struct cbuffer_ref *buffer_ref)
@@ -537,12 +549,14 @@ static void menu_item_close_activate(GtkWidget *widget, gpointer user_data)
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
+	
 	if (scrolled_window) {
 		GtkWidget *source_view = gtk_container_get_focus_child(scrolled_window);
 		gtk_notebook_remove_page(GTK_NOTEBOOK(window_handler->notebook),
 			gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
-		//gtk_widget_destroy(source_view);
-		//gtk_widget_destroy(scrolled_window);
+		if (gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook)) <= 0) {
+			gtk_window_set_title(window_handler->window, "Love Text");
+		}
 	}
 }
 
@@ -556,6 +570,8 @@ static void accel_close(GtkAccelGroup *accel_group, GObject *acceleratable, guin
 static void menu_item_exit_activate(GtkWidget *widget, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.exit\".\n");
+	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	gtk_widget_destroy(window_handler->window);
 }
 
 static void accel_exit(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
@@ -1125,7 +1141,8 @@ static gboolean source_view_key_release_event(GtkWidget *widget, GdkEventKey *ev
 		GtkWidget *label = buffer_ref->label;
 		if (label) {
 			if (buffer_ref->file_name) {
-				if (gtk_source_buffer_can_undo(gtk_text_view_get_buffer(buffer_ref->source_view)) && gtk_text_buffer_get_modified(gtk_text_view_get_buffer(buffer_ref->source_view))) {
+				if (gtk_source_buffer_can_undo(gtk_text_view_get_buffer(buffer_ref->source_view)) &&
+				gtk_text_buffer_get_modified(gtk_text_view_get_buffer(buffer_ref->source_view))) {
 					gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_ACTIVE, TRUE);
 				} else {
 					gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_NORMAL, TRUE);
@@ -1178,12 +1195,25 @@ static void button_close_tab_clicked(GtkWidget *widget, gpointer user_data)
 	}
 }
 
+static void source_view_draw_layer(GtkWidget *widget, GtkTextViewLayer layer, cairo_t *cr)
+{
+	if (layer == GTK_TEXT_VIEW_LAYER_ABOVE) {
+		// Draw above the text.
+		// Call a Lua function to draw.
+	}
+}
+
 struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *file_name, gboolean modified, gchar *text, struct cpreferences *preferences)
 {
 	struct cbuffer_ref *buffer_ref = (struct cbuffer_ref *)malloc(sizeof(struct cbuffer_ref));
 	buffer_ref->file_name = g_string_new(file_name);
 	buffer_ref->modified = modified;
 	buffer_ref->source_view = gtk_source_view_new();
+	
+	GtkTextViewClass *source_view_class = G_OBJECT_GET_CLASS(buffer_ref->source_view);
+	if (source_view_class) {
+		source_view_class->draw_layer = source_view_draw_layer;
+	}
 	
 	gtk_source_view_set_show_line_marks(buffer_ref->source_view, TRUE);
 	gtk_source_view_set_show_line_numbers(buffer_ref->source_view, TRUE);
@@ -1238,7 +1268,6 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	g_object_set_data(button_close, "buf_ref", buffer_ref);
 	g_signal_connect(button_close, "clicked", G_CALLBACK(button_close_tab_clicked), window_handler);
 	
-	
 	gtk_box_pack_start(tab, label, TRUE, TRUE, 0);
 	gtk_box_pack_start(tab, button_close, FALSE, TRUE, 0);
 	
@@ -1276,7 +1305,6 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 		}
 	}
 	lua_pop(window_handler->lua, 1);
-	
 	return buffer_ref;
 }
 
@@ -1474,8 +1502,12 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 		"highlight_maching_brackets",
 		preferences->highlight_maching_brackets);
 	
-	if (g_key_file_save_to_file(preferences->configuration_file, preferences->configuration_file_path->str, NULL)) {
-		g_printf("[MESSAGE] Configuration saved.\n");
+	if (preferences->configuration_file_path) {
+		if (g_key_file_save_to_file(preferences->configuration_file, preferences->configuration_file_path->str, NULL)) {
+			g_printf("[MESSAGE] Configuration saved.\n");
+		}
+	} else {
+		g_printf("[ERROR] Configuration not saved. Lack configuration file path.\n");
 	}
 	
 	gtk_main_quit();
@@ -1489,6 +1521,7 @@ static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint p
 	
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 		page_num);
+	GString *title = g_string_new("Love Text");
 	
 	if (scrolled_window) {
 		struct cbuffer_ref *buffer_ref = NULL;
@@ -1502,11 +1535,10 @@ static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint p
 		}
 		//g_printf("PATH %i TO \"%s\"\n\n\n", page_num, window_handler->preferences->last_path->str);
 		
-		GString *title = g_string_new("Love Text - ");
-		title = g_string_append(title, buffer_ref->file_name->str);
-		gtk_window_set_title(window_handler->window, title->str);
-		g_string_free(title, TRUE);
-		
+		if (buffer_ref->file_name->len > 0) {
+			title = g_string_append(title, " - ");
+			title = g_string_append(title, buffer_ref->file_name->str);
+		}
 		lua_getglobal(window_handler->lua, "editor");
 		if (lua_istable(window_handler->lua, -1)) {
 			lua_pushstring(window_handler->lua, "f_page_switch");
@@ -1525,6 +1557,8 @@ static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint p
 		}
 		lua_pop(window_handler->lua, 1);
 	}
+	gtk_window_set_title(window_handler->window, title->str);
+	g_string_free(title, TRUE);
 }
 
 static void window_drag_data_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint type, guint time, gpointer user_data)
@@ -1685,16 +1719,6 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 		g_cclosure_new(G_CALLBACK(accel_cut), window_handler, NULL));
 	
 	// Accelerators.
-	/*gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_Page_Down,
-		GDK_CONTROL_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_next_page), window_handler, NULL));
-	gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_Page_Up,
-		GDK_CONTROL_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_previous_page), window_handler, NULL));*/
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_M,
 		GDK_CONTROL_MASK,
@@ -1770,6 +1794,13 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_W, GDK_CONTROL_MASK);
 	g_signal_connect(G_OBJECT(menu_item), "activate",
 		G_CALLBACK(menu_item_close_activate), window_handler);
+	gtk_menu_shell_append(menu, menu_item);
+	
+	menu_item = gtk_menu_item_new_with_label("Exit");
+	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
+	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_F4, GDK_MOD1_MASK);
+	g_signal_connect(G_OBJECT(menu_item), "activate",
+		G_CALLBACK(menu_item_exit_activate), window_handler);
 	gtk_menu_shell_append(menu, menu_item);
 	
 	// Menu Edit.
@@ -1993,7 +2024,7 @@ struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
 	g_signal_connect(window_handler->notebook, "drag-motion", G_CALLBACK(window_drag_motion), window_handler);
 	g_signal_connect(window_handler->notebook, "drag-data-received", G_CALLBACK(window_drag_data_received), window_handler);
 	
-	g_printf("[MESSAGE] Done.\n");
+	g_printf("[MESSAGE] Main window created.\n");
 	if (preferences->start_new_page) {
 		//action_new_activate(NULL, NULL, window_handler);
 	}

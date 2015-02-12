@@ -43,28 +43,58 @@ THE SOFTWARE.
 
 struct cpreferences *alloc_preferences()
 {
-	struct cpreferences *preferences = (struct cpreferences *)malloc(sizeof(struct cpreferences));
+	struct cpreferences *preferences = malloc(sizeof(struct cpreferences));
 	
-	preferences->home_path = g_string_new(getenv("HOME"));
-	preferences->last_path = g_string_new("");
-	preferences->program_path = g_string_new(preferences->home_path->str);
-	preferences->program_path = g_string_append(preferences->program_path, "/.lovetext");
-	if (g_file_test(preferences->program_path->str, G_FILE_TEST_IS_DIR)) {
+	char *home_env = getenv("HOME");
+	if (home_env) {
+		g_printf("[MESSAGE] Your home path is \"%s\".\n", home_env);
+		preferences->home_path = g_string_new(home_env);
 	} else {
-		g_printf("[ERROR] Configuration path not found. Creating at \"%s\".\n", preferences->program_path->str);
-		mkdir(preferences->program_path->str, 0777);
+		g_printf("[ERROR] Your home path is NULL, failed to recieve enviroment variable \"HOME\".\n");
+		preferences->home_path = NULL;
+	}
+	preferences->last_path = g_string_new("/");
+	
+	if (preferences->home_path) {
+		g_printf("[MESSAGE] Setting configuration path.\n");
+		preferences->program_path = g_string_new(preferences->home_path->str);
+		preferences->program_path = g_string_append(preferences->program_path, "/.lovetext");
+		
+		if (g_file_test(preferences->program_path->str, G_FILE_TEST_IS_DIR)) {
+			g_printf("[MESSAGE] Configuration path found at \"%s\".\n", preferences->program_path->str);
+		} else {
+			g_printf("[ERROR] Configuration path not found. Creating at \"%s\".\n", preferences->program_path->str);
+			mkdir(preferences->program_path->str, 0777);
+		}
+	} else {
+		g_printf("[ERROR] Your home path is not set. Igoring configuration path.\n");
+		preferences->program_path = NULL;
 	}
 	
-	preferences->extension_path = g_string_new(preferences->program_path->str);
-	preferences->extension_path = g_string_append(preferences->extension_path, "/plugins");
-	if (g_file_test(preferences->extension_path->str, G_FILE_TEST_IS_DIR)) {
+	if (preferences->program_path) {
+		g_printf("[MESSAGE] Setting extension path.\n");
+		preferences->extension_path = g_string_new(preferences->program_path->str);
+		preferences->extension_path = g_string_append(preferences->extension_path, "/plugins");
+		
+		if (g_file_test(preferences->extension_path->str, G_FILE_TEST_IS_DIR)) {
+			g_printf("[MESSAGE] Configuration path found at \"%s\".\n", preferences->extension_path->str);
+		} else {
+			g_printf("[ERROR] Extensions path not found. Creating at \"%s\".\n", preferences->extension_path->str);
+			mkdir(preferences->extension_path->str, 0777);
+		}
 	} else {
-		g_printf("[ERROR] Extensions path not found. Creating at \"%s\".\n", preferences->extension_path->str);
-		mkdir(preferences->extension_path->str, 0777);
+		g_printf("[ERROR] Your configuration path is not set. Igoring extension path.\n");
+		preferences->extension_path = NULL;
 	}
 	
-	preferences->configuration_file_path = g_string_new(preferences->program_path->str);
-	preferences->configuration_file_path = g_string_append(preferences->configuration_file_path, "/lovetextrc");
+	if (preferences->program_path) {
+		g_printf("[MESSAGE] Setting configuration file path.\n");
+		preferences->configuration_file_path = g_string_new(preferences->program_path->str);
+		preferences->configuration_file_path = g_string_append(preferences->configuration_file_path, "/lovetextrc");
+	} else {
+		g_printf("[ERROR] Your configuration path is not set. Igoring configuration file path.\n");
+		preferences->configuration_file_path = NULL;
+	}
 	
 	preferences->configuration_file = g_key_file_new();
 	
@@ -75,56 +105,60 @@ struct cpreferences *alloc_preferences()
 	preferences->show_status_bar = FALSE;
 	preferences->show_tool_bar = FALSE;
 	preferences->use_custom_gtk_theme = FALSE;
-	if (g_key_file_load_from_file(preferences->configuration_file,
-		preferences->configuration_file_path->str, G_KEY_FILE_NONE, NULL)) {
-		scheme_id = g_key_file_get_string(preferences->configuration_file,
-			"editor",
-			"scheme_id",
-			NULL);
-		preferences->start_new_page = g_key_file_get_boolean(preferences->configuration_file,
-			"general",
-			"start_new_page",
-			NULL);
-		preferences->use_custom_gtk_theme = g_key_file_get_boolean(preferences->configuration_file,
-			"general",
-			"use_custom_gtk_theme",
-			NULL);
-		preferences->gtk_theme = g_key_file_get_string(preferences->configuration_file,
-			"general",
-			"gtk_theme",
-			NULL);
-		preferences->show_menu_bar = g_key_file_get_boolean(preferences->configuration_file,
-			"general",
-			"show_menu_bar",
-			NULL);
-		preferences->show_tool_bar = g_key_file_get_boolean(preferences->configuration_file,
-			"general",
-			"show_tool_bar",
-			NULL);
-		preferences->show_status_bar = g_key_file_get_boolean(preferences->configuration_file,
-			"general",
-			"show_status_bar",
-			NULL);
-		preferences->show_line_numbers = g_key_file_get_boolean(preferences->configuration_file,
-			"editor",
-			"show_line_numbers",
-			NULL);
-		preferences->show_right_margin = g_key_file_get_boolean(preferences->configuration_file,
-			"editor",
-			"show_right_margin",
-			NULL);
-		preferences->highlight_current_line = g_key_file_get_boolean(preferences->configuration_file,
-			"editor",
-			"highlight_current_line",
-			NULL);
-		preferences->highlight_maching_brackets = g_key_file_get_boolean(preferences->configuration_file,
-			"editor",
-			"highlight_maching_brackets",
-			NULL);
+	if (preferences->configuration_file_path) {
+		g_printf("[MESSAGE] Trying to load configuration file from \"%s\".\n", preferences->configuration_file_path->str);
+		if (g_key_file_load_from_file(preferences->configuration_file,
+			preferences->configuration_file_path->str, G_KEY_FILE_NONE, NULL)) {
+			scheme_id = g_key_file_get_string(preferences->configuration_file,
+				"editor",
+				"scheme_id",
+				NULL);
+			preferences->start_new_page = g_key_file_get_boolean(preferences->configuration_file,
+				"general",
+				"start_new_page",
+				NULL);
+			preferences->use_custom_gtk_theme = g_key_file_get_boolean(preferences->configuration_file,
+				"general",
+				"use_custom_gtk_theme",
+				NULL);
+			preferences->gtk_theme = g_key_file_get_string(preferences->configuration_file,
+				"general",
+				"gtk_theme",
+				NULL);
+			preferences->show_menu_bar = g_key_file_get_boolean(preferences->configuration_file,
+				"general",
+				"show_menu_bar",
+				NULL);
+			preferences->show_tool_bar = g_key_file_get_boolean(preferences->configuration_file,
+				"general",
+				"show_tool_bar",
+				NULL);
+			preferences->show_status_bar = g_key_file_get_boolean(preferences->configuration_file,
+				"general",
+				"show_status_bar",
+				NULL);
+			preferences->show_line_numbers = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"show_line_numbers",
+				NULL);
+			preferences->show_right_margin = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"show_right_margin",
+				NULL);
+			preferences->highlight_current_line = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"highlight_current_line",
+				NULL);
+			preferences->highlight_maching_brackets = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"highlight_maching_brackets",
+				NULL);
+		} else {
+			g_printf("[ERROR] Failed to open \"%s\"\n", preferences->configuration_file_path->str);
+		}
 	} else {
-		g_printf("[ERROR] Failed to open \"%s\"\n", preferences->configuration_file_path->str);
+		g_printf("[ERROR] Your configuration file path is not set. Igoring configuration file.\n");
 	}
-	
 	preferences->style_scheme_manager = gtk_source_style_scheme_manager_get_default();
 	preferences->scheme_ids = gtk_source_style_scheme_manager_get_scheme_ids(preferences->style_scheme_manager);
 	preferences->scheme = NULL;
