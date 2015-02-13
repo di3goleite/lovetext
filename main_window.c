@@ -92,6 +92,10 @@ static void initialize_lua(struct cwindow_handler *window_handler, struct cprefe
 		lua_pushlightuserdata(window_handler->lua, window_handler->notebook);
 		lua_settable(window_handler->lua, -3);
 		
+		lua_pushstring(window_handler->lua, "status_bar");
+		lua_pushlightuserdata(window_handler->lua, window_handler->status_bar);
+		lua_settable(window_handler->lua, -3);
+		
 		lua_pushstring(window_handler->lua, "accelerator_group");
 		lua_pushlightuserdata(window_handler->lua, window_handler->accelerator_group);
 		lua_settable(window_handler->lua, -3);
@@ -245,6 +249,15 @@ static void update_styles(struct cwindow_handler *window_handler)
 				}
 				GtkSourceBuffer *source_buffer = gtk_text_view_get_buffer(buffer_ref->source_view);
 				gtk_source_buffer_set_style_scheme(source_buffer, window_handler->preferences->scheme);
+				PangoFontDescription *font_description = pango_font_description_from_string(window_handler->preferences->editor_font->str);
+				gtk_widget_modify_font(buffer_ref->source_view, font_description);
+				gtk_source_view_set_show_line_marks(buffer_ref->source_view, window_handler->preferences->show_line_marks);
+				gtk_source_view_set_show_line_numbers(buffer_ref->source_view, window_handler->preferences->show_line_numbers);
+				gtk_source_view_set_show_right_margin(buffer_ref->source_view, window_handler->preferences->show_right_margin);
+				gtk_source_view_set_tab_width(buffer_ref->source_view, window_handler->preferences->tab_width);
+				gtk_source_view_set_auto_indent(buffer_ref->source_view, window_handler->preferences->auto_indent);
+				gtk_source_buffer_set_highlight_matching_brackets(source_buffer, window_handler->preferences->highlight_matching_brackets);
+				gtk_source_view_set_highlight_current_line(buffer_ref->source_view, window_handler->preferences->highlight_current_line);
 			}
 		}
 	}
@@ -278,32 +291,8 @@ static void update_providers(struct cwindow_handler *window_handler)
 	}
 }
 
-static void tree_view_schemes_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
+static void update_editor(struct cwindow_handler *window_handler)
 {
-	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gchar *path_string = gtk_tree_path_to_string(path);
-	
-	GtkTreeModel *tree_model = gtk_tree_view_get_model(tree_view);
-	GtkTreeIter iter;
-	if (gtk_tree_model_get_iter_from_string(tree_model, &iter, path_string)) {
-		gchar *id = NULL;
-		gtk_tree_model_get(tree_model, &iter, _COLUMN_ID_, &id, -1);
-		if (id) {
-			GtkSourceStyleScheme *scheme = gtk_source_style_scheme_manager_get_scheme(window_handler->preferences->style_scheme_manager, id);
-			if (scheme) {
-				window_handler->preferences->scheme = scheme;
-				gtk_tree_model_get(tree_model, &iter, _COLUMN_ID_, &id, -1);
-				
-				//gtk_tree_view_column_set_attributes(column, window_handler->window_preferences_handler->cell_renderer_toggle, "active", FALSE, NULL);
-				
-				GtkTreeIter child_iter;
-				GtkTreeModel *child_model = gtk_tree_model_sort_get_model(GTK_TREE_MODEL_SORT(tree_model));
-				gtk_tree_model_sort_convert_iter_to_child_iter(GTK_TREE_MODEL_SORT(tree_model), &child_iter, &iter);
-				gtk_tree_store_set(GTK_TREE_STORE(child_model), &child_iter, _COLUMN_SCHEME_TOGGLE_, TRUE, -1);
-			}
-		}
-	}
-	g_free(path_string);
 	update_styles(window_handler);
 }
 
@@ -541,8 +530,15 @@ static void menu_item_preferences_activate(GtkWidget *widget, gpointer user_data
 {
 	g_printf("[MESSAGE] Performing action \"window.preferences\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	
+	// Preferences window.
 	window_handler->window_preferences_handler = alloc_window_preferences_handler(window_handler->preferences);
-	g_signal_connect(window_handler->window_preferences_handler->tree_view, "row-activated", G_CALLBACK(tree_view_schemes_row_activated), window_handler);
+	if (window_handler->window_preferences_handler) {
+		// Circular reference.
+		window_handler->window_preferences_handler->window_handler = window_handler;
+		window_handler->window_preferences_handler->update_editor = update_editor;
+		
+	}
 	gtk_widget_show_all(window_handler->window_preferences_handler->window);
 	gtk_window_set_transient_for(window_handler->window_preferences_handler->window, window_handler->window);
 }
@@ -1206,21 +1202,6 @@ static void button_close_tab_clicked(GtkWidget *widget, gpointer user_data)
 	}
 }
 
-static void source_view_draw_layer(GtkWidget *widget, GtkTextViewLayer layer, cairo_t *cr)
-{
-	struct cbuffer_ref *buffer_ref = g_object_get_data(widget, "buf_ref");
-	if (buffer_ref) {
-		if (buffer_ref->previous_draw_layer) {
-			buffer_ref->previous_draw_layer(widget, layer, cr);
-		}
-	}
-	
-	if (layer == GTK_TEXT_VIEW_LAYER_ABOVE) {
-		// Draw above the text.
-		// Call a Lua function to draw.
-	}
-}
-
 struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *file_name, gboolean modified, gchar *text, struct cpreferences *preferences)
 {
 	struct cbuffer_ref *buffer_ref = (struct cbuffer_ref *)malloc(sizeof(struct cbuffer_ref));
@@ -1228,18 +1209,14 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	buffer_ref->modified = modified;
 	buffer_ref->source_view = gtk_source_view_new();
 	
-	GtkTextViewClass *source_view_class = G_OBJECT_GET_CLASS(buffer_ref->source_view);
-	if (source_view_class) {
-		//buffer_ref->previous_draw_layer = source_view_class->draw_layer;
-		//source_view_class->draw_layer = source_view_draw_layer;
-	}
+	gtk_source_view_set_show_line_marks(buffer_ref->source_view, preferences->show_line_marks);
+	gtk_source_view_set_show_line_numbers(buffer_ref->source_view, preferences->show_line_numbers);
+	gtk_source_view_set_show_right_margin(buffer_ref->source_view, preferences->show_right_margin);
+	gtk_source_view_set_tab_width(buffer_ref->source_view, preferences->tab_width);
+	gtk_source_view_set_auto_indent(buffer_ref->source_view, preferences->auto_indent);
+	gtk_source_buffer_set_highlight_matching_brackets(gtk_text_view_get_buffer(buffer_ref->source_view), preferences->highlight_matching_brackets);
+	gtk_source_view_set_highlight_current_line(buffer_ref->source_view, preferences->highlight_current_line);
 	
-	gtk_source_view_set_show_line_marks(buffer_ref->source_view, TRUE);
-	gtk_source_view_set_show_line_numbers(buffer_ref->source_view, TRUE);
-	gtk_source_view_set_show_right_margin(buffer_ref->source_view, TRUE);
-	gtk_source_view_set_tab_width(buffer_ref->source_view, 8);
-	gtk_source_view_set_auto_indent(buffer_ref->source_view, TRUE);
-	gtk_source_view_set_highlight_current_line(buffer_ref->source_view, TRUE);
 	gtk_text_buffer_set_text(gtk_text_view_get_buffer(buffer_ref->source_view), text, -1);
 	PangoFontDescription *font_description = pango_font_description_from_string(preferences->editor_font->str);
 	gtk_widget_modify_font(buffer_ref->source_view, font_description);
@@ -1272,6 +1249,7 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	gtk_adjustment_set_step_increment(vadjustment, 0.1);
 	gtk_container_add(buffer_ref->scrolled_window, buffer_ref->source_view);
 	
+	//g_signal_connect_after(buffer_ref->source_view, "draw", G_CALLBACK(source_view_draw), window_handler);
 	g_signal_connect(buffer_ref->source_view, "key-press-event", G_CALLBACK(source_view_key_press_event), window_handler);
 	g_signal_connect(buffer_ref->source_view, "key-release-event", G_CALLBACK(source_view_key_release_event), window_handler);
 	
@@ -1466,6 +1444,11 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 		"scheme_id",
 		scheme_id);
 	
+	g_key_file_set_string(preferences->configuration_file,
+		"editor",
+		"font",
+		preferences->editor_font->str);
+	
 	g_key_file_set_boolean(preferences->configuration_file,
 		"general",
 		"start_new_page",
@@ -1518,8 +1501,23 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 	
 	g_key_file_set_boolean(preferences->configuration_file,
 		"editor",
-		"highlight_maching_brackets",
-		preferences->highlight_maching_brackets);
+		"highlight_matching_brackets",
+		preferences->highlight_matching_brackets);
+	
+	g_key_file_set_boolean(preferences->configuration_file,
+		"editor",
+		"show_line_marks",
+		preferences->show_line_marks);
+	
+	g_key_file_set_boolean(preferences->configuration_file,
+		"editor",
+		"auto_indent",
+		preferences->auto_indent);
+	
+	g_key_file_set_integer(preferences->configuration_file,
+		"editor",
+		"tab_width",
+		preferences->tab_width);
 	
 	if (preferences->configuration_file_path) {
 		if (g_key_file_save_to_file(preferences->configuration_file, preferences->configuration_file_path->str, NULL)) {
@@ -1937,6 +1935,7 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 
 struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
 {
+	g_printf("[MESSAGE] Creating main window.\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)malloc(sizeof(struct cwindow_handler));
 	window_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	

@@ -70,48 +70,91 @@ static void check_button_use_custom_gtk_theme(GtkWidget *widget, gpointer user_d
 		g_object_set(settings, "gtk-theme-name", window_preferences_handler->preferences->gtk_theme, NULL);
 	}
 	*/
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
 static void check_button_show_line_numbers_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
 	window_preferences_handler->preferences->show_line_numbers = gtk_toggle_button_get_active(widget);
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
 static void check_button_show_right_margin_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
 	window_preferences_handler->preferences->show_right_margin = gtk_toggle_button_get_active(widget);
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
-static void check_button_highlight_maching_brackets_toggled(GtkWidget *widget, gpointer user_data)
+static void check_button_highlight_matching_brackets_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->highlight_maching_brackets = gtk_toggle_button_get_active(widget);
+	window_preferences_handler->preferences->highlight_matching_brackets = gtk_toggle_button_get_active(widget);
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
 static void check_button_highlight_current_line_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
 	window_preferences_handler->preferences->highlight_current_line = gtk_toggle_button_get_active(widget);
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
 static void check_button_show_menu_bar_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
 	window_preferences_handler->preferences->show_menu_bar = gtk_toggle_button_get_active(widget);
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
 static void check_button_show_tool_bar_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
 	window_preferences_handler->preferences->show_tool_bar = gtk_toggle_button_get_active(widget);
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
 static void check_button_show_status_bar_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
 	window_preferences_handler->preferences->show_status_bar = gtk_toggle_button_get_active(widget);
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
+}
+
+static void button_font_font_set(GtkWidget *widget, gpointer user_data)
+{
+	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
+	window_preferences_handler->preferences->editor_font = g_string_assign(window_preferences_handler->preferences->editor_font,
+		gtk_font_button_get_font_name(widget));
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
+}
+
+static void tree_view_schemes_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
+{
+	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
+	gchar *path_string = gtk_tree_path_to_string(path);
+	
+	GtkTreeModel *tree_model = gtk_tree_view_get_model(tree_view);
+	GtkTreeIter iter;
+	if (gtk_tree_model_get_iter_from_string(tree_model, &iter, path_string)) {
+		gchar *id = NULL;
+		gtk_tree_model_get(tree_model, &iter, _COLUMN_ID_, &id, -1);
+		if (id) {
+			GtkSourceStyleScheme *scheme = gtk_source_style_scheme_manager_get_scheme(window_preferences_handler->preferences->style_scheme_manager, id);
+			if (scheme) {
+				window_preferences_handler->preferences->scheme = scheme;
+				gtk_tree_model_get(tree_model, &iter, _COLUMN_ID_, &id, -1);
+				
+				GtkTreeIter child_iter;
+				GtkTreeModel *child_model = gtk_tree_model_sort_get_model(GTK_TREE_MODEL_SORT(tree_model));
+				gtk_tree_model_sort_convert_iter_to_child_iter(GTK_TREE_MODEL_SORT(tree_model), &child_iter, &iter);
+				gtk_tree_store_set(GTK_TREE_STORE(child_model), &child_iter, _COLUMN_SCHEME_TOGGLE_, TRUE, -1);
+			}
+		}
+	}
+	g_free(path_string);
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
 static gboolean entry_custom_gtk_theme_key_press_event(GtkWidget *widget, GdkEvent *event, gpointer user_data)
@@ -149,6 +192,7 @@ static void window_preferences_destroy(GtkWidget *widget, gpointer user_pointer)
 
 struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpreferences *preferences)
 {
+	g_printf("[MESSAGE] Creating preferences window.\n");
 	struct cwindow_preferences_handler *window_preferences_handler = malloc(sizeof(struct cwindow_preferences_handler));
 	window_preferences_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window_preferences_handler->window), "Love Text - Preferences");
@@ -229,8 +273,8 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpre
 	
 	widget = gtk_check_button_new_with_label("Highlight matching brackets.");
 	gtk_widget_set_margin_top(widget, 8);
-	gtk_toggle_button_set_active(widget, preferences->highlight_maching_brackets);
-	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_highlight_maching_brackets_toggled), window_preferences_handler);
+	gtk_toggle_button_set_active(widget, preferences->highlight_matching_brackets);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_highlight_matching_brackets_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
 	
 	widget = gtk_label_new("Font:");
@@ -239,6 +283,8 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpre
 	gtk_widget_set_halign(widget, GTK_ALIGN_START);
 	
 	widget = gtk_font_button_new();
+	gtk_font_button_set_font_name(widget, preferences->editor_font->str);
+	g_signal_connect(widget, "font-set", G_CALLBACK(button_font_font_set), window_preferences_handler);
 	gtk_widget_set_margin_top(widget, 2);
 	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
 	
@@ -252,11 +298,11 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpre
 	widget = gtk_tree_view_new();
 	gtk_tree_view_set_headers_visible(widget, FALSE);
 	
-	
 	window_preferences_handler->tree_model = GTK_TREE_MODEL(gtk_tree_store_new(3, G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_STRING));
 	window_preferences_handler->tree_model_sorted = gtk_tree_model_sort_new_with_model(window_preferences_handler->tree_model);
 	
 	window_preferences_handler->tree_view = gtk_tree_view_new_with_model(window_preferences_handler->tree_model_sorted);
+	g_signal_connect(window_preferences_handler->tree_view, "row-activated", G_CALLBACK(tree_view_schemes_row_activated), window_preferences_handler);
 	gtk_tree_view_set_reorderable(GTK_TREE_VIEW(window_preferences_handler->tree_view), FALSE);
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(window_preferences_handler->tree_view), FALSE);
 	
@@ -312,6 +358,8 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpre
 	gtk_container_add(GTK_CONTAINER(window_preferences_handler->window), window_preferences_handler->box);
 	
 	window_preferences_handler->preferences = preferences;
+	
+	g_printf("[MESSAGE] Preferences window created.\n");
 	
 	return window_preferences_handler;
 }
