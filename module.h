@@ -82,10 +82,13 @@ struct cpreferences
 	gboolean show_tool_bar;
 	
 	// [editor]
+	gboolean show_line_marks;
 	gboolean show_line_numbers;
 	gboolean show_right_margin;
 	gboolean highlight_current_line;
-	gboolean highlight_maching_brackets;
+	gboolean highlight_matching_brackets;
+	gboolean auto_indent;
+	gint tab_width;
 	
 	GtkSourceStyleScheme *scheme;
 	GtkSourceStyleSchemeManager *style_scheme_manager;

@@ -47,6 +47,7 @@ THE SOFTWARE.
 #define _COLUMN_ID_ 1
 #define _COLUMN_SCHEME_ 2
 
+typedef (* update_editorf)(void *);
 struct cwindow_preferences_handler
 {
 	GtkWidget *window;
@@ -60,6 +61,10 @@ struct cwindow_preferences_handler
 	
 	GtkSourceStyleScheme *scheme;
 	GtkWidget *treeview_schemes;
+	
+	void *window_handler;
+	
+	update_editorf update_editor;
 	
 	struct cpreferences *preferences;
 };

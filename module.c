@@ -106,11 +106,20 @@ struct cpreferences *alloc_preferences()
 	
 	preferences->gtk_theme = NULL;
 	gchar *scheme_id = NULL;
+	gchar *font_name = NULL;
 	preferences->start_new_page = FALSE;
 	preferences->show_menu_bar = FALSE;
 	preferences->show_status_bar = FALSE;
 	preferences->show_tool_bar = FALSE;
 	preferences->use_custom_gtk_theme = FALSE;
+	
+	preferences->show_line_numbers = TRUE;
+	preferences->show_line_marks = TRUE;
+	preferences->show_right_margin = TRUE;
+	preferences->auto_indent = TRUE;
+	preferences->highlight_current_line = TRUE;
+	preferences->highlight_matching_brackets = TRUE;
+	preferences->tab_width = 8;
 	if (preferences->configuration_file_path) {
 		g_printf("[MESSAGE] Trying to load configuration file from \"%s\".\n", preferences->configuration_file_path->str);
 		if (g_key_file_load_from_file(preferences->configuration_file,
@@ -119,6 +128,10 @@ struct cpreferences *alloc_preferences()
 			scheme_id = g_key_file_get_string(preferences->configuration_file,
 				"editor",
 				"scheme_id",
+				NULL);
+			font_name = g_key_file_get_string(preferences->configuration_file,
+				"editor",
+				"font",
 				NULL);
 			preferences->start_new_page = g_key_file_get_boolean(preferences->configuration_file,
 				"general",
@@ -156,9 +169,21 @@ struct cpreferences *alloc_preferences()
 				"editor",
 				"highlight_current_line",
 				NULL);
-			preferences->highlight_maching_brackets = g_key_file_get_boolean(preferences->configuration_file,
+			preferences->highlight_matching_brackets = g_key_file_get_boolean(preferences->configuration_file,
 				"editor",
-				"highlight_maching_brackets",
+				"highlight_matching_brackets",
+				NULL);
+			preferences->auto_indent = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"auto_indent",
+				NULL);
+			preferences->show_line_marks = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"show_line_marks",
+				NULL);
+			preferences->tab_width = g_key_file_get_integer(preferences->configuration_file,
+				"editor",
+				"tab_width",
 				NULL);
 		} else {
 			g_printf("[ERROR] Failed to open \"%s\"\n", preferences->configuration_file_path->str);
@@ -174,7 +199,11 @@ struct cpreferences *alloc_preferences()
 		preferences->scheme = gtk_source_style_scheme_manager_get_scheme(preferences->style_scheme_manager, scheme_id);
 	}
 	
-	preferences->editor_font = g_string_new("Fixed");
+	if (font_name) {
+		preferences->editor_font = g_string_new(font_name);
+	} else {
+		preferences->editor_font = g_string_new("Fixed");
+	}
 	preferences->language_manager = gtk_source_language_manager_get_default();
 	
 	return preferences;
