@@ -250,7 +250,7 @@ static void update_styles(struct cwindow_handler *window_handler)
 				GtkSourceBuffer *source_buffer = gtk_text_view_get_buffer(buffer_ref->source_view);
 				gtk_source_buffer_set_style_scheme(source_buffer, window_handler->preferences->scheme);
 				PangoFontDescription *font_description = pango_font_description_from_string(window_handler->preferences->editor_font->str);
-				gtk_widget_modify_font(buffer_ref->source_view, font_description);
+				gtk_widget_override_font(buffer_ref->source_view, font_description);
 				gtk_source_view_set_show_line_marks(buffer_ref->source_view, window_handler->preferences->show_line_marks);
 				gtk_source_view_set_show_line_numbers(buffer_ref->source_view, window_handler->preferences->show_line_numbers);
 				gtk_source_view_set_show_right_margin(buffer_ref->source_view, window_handler->preferences->show_right_margin);
@@ -333,7 +333,6 @@ static void menu_item_open_activate(GtkWidget *widget, gpointer user_data)
 		NULL);
 	gtk_file_chooser_set_select_multiple(file_chooser, TRUE);
 	gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
-	
 	gtk_file_chooser_set_current_folder(file_chooser, window_handler->preferences->last_path->str);
 	
 	if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
@@ -429,6 +428,8 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 					GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 					GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
 					NULL);
+				gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
+				gtk_file_chooser_set_current_folder(file_chooser, window_handler->preferences->last_path->str);
 				if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
 					gchar *file_name = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
 					FILE *file = fopen(file_name, "w");
@@ -443,6 +444,7 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 					fwrite(text, sizeof(unsigned char), strlen(text), file);
 					g_free(text);
 					fclose(file);
+					buffer_ref->file_name = g_string_assign(buffer_ref->file_name, file_name);
 				}
 				gtk_widget_destroy(file_chooser);
 				update_page_language(window_handler, buffer_ref);
@@ -451,18 +453,13 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 			if (separator) {
 				gtk_label_set_text(buffer_ref->label, ++separator);
 			}
-			/*GdkRGBA rgba;
-			rgba->alpha = 1.0;
-			rgba->red = 0.0;
-			rgba->green = 0.0;
-			rgba->blue = 0.0;
-			GtkStyleContext *style_context = gtk_widget_get_style_context(buffer_ref->label);
-			if (style_context != NULL) {
-				
-				gtk_style_context_get_color(style_context, GTK_STATE_FLAG_NORMAL, &rgba);
+			GString *title = g_string_new("Love Text");
+			if (buffer_ref->file_name->len > 0) {
+				title = g_string_append(title, " - ");
+				title = g_string_append(title, buffer_ref->file_name->str);
 			}
-			gtk_widget_override_color(buffer_ref->label, GTK_STATE_FLAG_NORMAL, &rgba);
-			*/
+			gtk_window_set_title(window_handler->window, title->str);
+			g_string_free(title, TRUE);
 			gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_NORMAL, TRUE);
 			gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
 		}
@@ -492,6 +489,8 @@ static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
 				GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 				GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
 				NULL);
+			gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
+			gtk_file_chooser_set_current_folder(file_chooser, window_handler->preferences->last_path->str);
 			if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
 				gchar *file_name = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
 				FILE *file = fopen(file_name, "w");
@@ -506,13 +505,22 @@ static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
 				fwrite(text, sizeof(unsigned char), strlen(text), file);
 				g_free(text);
 				fclose(file);
+				buffer_ref->file_name = g_string_assign(buffer_ref->file_name, file_name);
 			}
 			gtk_widget_destroy(file_chooser);
 			update_page_language(window_handler, buffer_ref);
-			GtkWidget *label = gtk_notebook_get_tab_label(window_handler->notebook, buffer_ref->scrolled_window);
-			gchar *separator = strrchr(buffer_ref->file_name->str, '/');
-			gtk_label_set_text(label, ++separator);
 			
+			gchar *separator = strrchr(buffer_ref->file_name->str, '/');
+			if (separator) {
+				gtk_label_set_text(buffer_ref->label, ++separator);
+			}
+			GString *title = g_string_new("Love Text");
+			if (buffer_ref->file_name->len > 0) {
+				title = g_string_append(title, " - ");
+				title = g_string_append(title, buffer_ref->file_name->str);
+			}
+			gtk_window_set_title(window_handler->window, title->str);
+			g_string_free(title, TRUE);
 			gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_NORMAL, TRUE);
 			gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
 		}
@@ -1134,7 +1142,7 @@ static gboolean source_view_key_press_event(GtkWidget *widget, GdkEventKey *even
 			handled = TRUE;
 		}
 	}
-	return handled;
+	return FALSE;
 }
 
 static gboolean source_view_key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
@@ -1208,7 +1216,7 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	buffer_ref->file_name = g_string_new(file_name);
 	buffer_ref->modified = modified;
 	buffer_ref->source_view = gtk_source_view_new();
-	
+	gtk_widget_grab_focus(buffer_ref->source_view);
 	gtk_source_view_set_show_line_marks(buffer_ref->source_view, preferences->show_line_marks);
 	gtk_source_view_set_show_line_numbers(buffer_ref->source_view, preferences->show_line_numbers);
 	gtk_source_view_set_show_right_margin(buffer_ref->source_view, preferences->show_right_margin);
@@ -1806,11 +1814,17 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 		G_CALLBACK(menu_item_preferences_activate), window_handler);
 	gtk_menu_shell_append(menu, menu_item);
 	
+	menu_item = gtk_separator_menu_item_new();
+	gtk_menu_shell_append(menu, menu_item);
+	
 	menu_item = gtk_menu_item_new_with_label("Close");
 	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
 	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_W, GDK_CONTROL_MASK);
 	g_signal_connect(G_OBJECT(menu_item), "activate",
 		G_CALLBACK(menu_item_close_activate), window_handler);
+	gtk_menu_shell_append(menu, menu_item);
+	
+	menu_item = gtk_separator_menu_item_new();
 	gtk_menu_shell_append(menu, menu_item);
 	
 	menu_item = gtk_menu_item_new_with_label("Exit");
@@ -1907,11 +1921,18 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 		G_CALLBACK(menu_item_search_activate), window_handler);
 	gtk_menu_shell_append(menu, menu_item);
 	
-	menu_item = gtk_menu_item_new_with_label("Replace");
+	menu_item = gtk_menu_item_new_with_label("Search Next");
 	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_H, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_replace_activate), window_handler);
+	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_F3, 0);
+	//g_signal_connect(G_OBJECT(menu_item), "activate",
+	//	G_CALLBACK(menu_item_search_activate), window_handler);
+	gtk_menu_shell_append(menu, menu_item);
+	
+	menu_item = gtk_menu_item_new_with_label("Search Previous");
+	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
+	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_F3, GDK_SHIFT_MASK);
+	//g_signal_connect(G_OBJECT(menu_item), "activate",
+	//	G_CALLBACK(menu_item_replace_activate), window_handler);
 	gtk_menu_shell_append(menu, menu_item);
 	
 	menu_item = gtk_menu_item_new_with_label("Refresh Plugins");
