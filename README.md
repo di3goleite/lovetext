@@ -20,8 +20,9 @@ Feature            | Status
 Basic interface    | Done
 Configuration file | Done
 Scheme color       | Done
+Multiple selection | To-do
 Preferences        | In progress
-Minimap            | To-do
+Minimap            | In progress
 Command palette    | To-do
 Default extensions | In progress
 
