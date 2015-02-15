@@ -83,7 +83,7 @@ struct cpreferences *alloc_preferences()
 		preferences->extension_path = g_string_append(preferences->extension_path, "/plugins");
 		
 		if (g_file_test(preferences->extension_path->str, G_FILE_TEST_IS_DIR)) {
-			g_printf("[MESSAGE] Configuration path found at \"%s\".\n", preferences->extension_path->str);
+			g_printf("[MESSAGE] Extensions path found at \"%s\".\n", preferences->extension_path->str);
 		} else {
 			g_printf("[ERROR] Extensions path not found. Creating at \"%s\".\n", preferences->extension_path->str);
 			mkdir(preferences->extension_path->str, 0777);
@@ -108,7 +108,7 @@ struct cpreferences *alloc_preferences()
 	gchar *scheme_id = NULL;
 	gchar *font_name = NULL;
 	preferences->start_new_page = FALSE;
-	preferences->show_menu_bar = FALSE;
+	preferences->show_menu_bar = TRUE;
 	preferences->show_status_bar = FALSE;
 	preferences->show_tool_bar = FALSE;
 	preferences->use_custom_gtk_theme = FALSE;

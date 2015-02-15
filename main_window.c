@@ -68,11 +68,11 @@ static void initialize_lua(struct cwindow_handler *window_handler, struct cprefe
 	}
 	
 	luaL_openlibs(window_handler->lua);
-	if (!window_handler->lua) {
-		g_printf("[MESSAGE] Failed to create lua state.\n");
-		return;
-	} else {
+	if (window_handler->lua) {
 		g_printf("[MESSAGE] Lua state created.\n");
+	} else {
+		g_printf("[ERROR] Failed to create lua state.\n");
+		return;
 	}
 	
 	lua_newtable(window_handler->lua);
@@ -96,6 +96,10 @@ static void initialize_lua(struct cwindow_handler *window_handler, struct cprefe
 		lua_pushlightuserdata(window_handler->lua, window_handler->status_bar);
 		lua_settable(window_handler->lua, -3);
 		
+		lua_pushstring(window_handler->lua, "configuration_file");
+		lua_pushlightuserdata(window_handler->lua, preferences->configuration_file);
+		lua_settable(window_handler->lua, -3);
+		
 		lua_pushstring(window_handler->lua, "accelerator_group");
 		lua_pushlightuserdata(window_handler->lua, window_handler->accelerator_group);
 		lua_settable(window_handler->lua, -3);
@@ -108,6 +112,7 @@ static void initialize_lua(struct cwindow_handler *window_handler, struct cprefe
 	}
 	lua_pop(window_handler->lua, 1);
 	
+	g_printf("[MESSAGE] Loading base extension.\n");
 	// Load base script.
 	GString *base_full_name = NULL;
 	if (preferences->program_path) {
@@ -809,6 +814,7 @@ static void menu_item_toggle_menu_bar_activate(GtkWidget *widget, gpointer user_
 	} else {
 		gtk_widget_show(window_handler->menu_bar);
 	}
+	window_handler->preferences->show_menu_bar = gtk_widget_get_visible(window_handler->menu_bar);
 }
 
 static void accel_toggle_menu_bar(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
@@ -827,6 +833,7 @@ static void menu_item_toggle_status_bar_activate(GtkWidget *widget, gpointer use
 	} else {
 		gtk_widget_show(window_handler->status_bar);
 	}
+	window_handler->preferences->show_status_bar = gtk_widget_get_visible(window_handler->status_bar);
 }
 
 static void accel_toggle_status_bar(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
@@ -1925,14 +1932,14 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
 	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_F3, 0);
 	//g_signal_connect(G_OBJECT(menu_item), "activate",
-	//	G_CALLBACK(menu_item_search_activate), window_handler);
+	//	G_CALLBACK(menu_item_search_next_activate), window_handler);
 	gtk_menu_shell_append(menu, menu_item);
 	
 	menu_item = gtk_menu_item_new_with_label("Search Previous");
 	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
 	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_F3, GDK_SHIFT_MASK);
 	//g_signal_connect(G_OBJECT(menu_item), "activate",
-	//	G_CALLBACK(menu_item_replace_activate), window_handler);
+	//	G_CALLBACK(menu_item_search_previous_activate), window_handler);
 	gtk_menu_shell_append(menu, menu_item);
 	
 	menu_item = gtk_menu_item_new_with_label("Refresh Plugins");
@@ -2051,9 +2058,9 @@ struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
 	
 	window_handler->id_factory = 0;
 	
+	window_handler->preferences = preferences;
 	initialize_lua(window_handler, preferences);
 	
-	window_handler->preferences = preferences;
 	
 	gtk_drag_dest_set(window_handler->notebook, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_COPY);
 	gtk_drag_dest_add_text_targets(window_handler->notebook);
