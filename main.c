@@ -130,6 +130,7 @@ static void main_application_activate(GApplication *application, gpointer user_d
 	gtk_application_add_window(application_handler->application, window_handler->window);
 	gtk_window_present(window_handler->window);
 	gtk_widget_show_all(window_handler->window);
+	initialize_lua(window_handler, preferences);
 	gtk_widget_set_visible(window_handler->status_bar, preferences->show_status_bar);
 	gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
 	gtk_widget_set_visible(window_handler->search_and_replace_bar, FALSE);
