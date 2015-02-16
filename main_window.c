@@ -57,7 +57,7 @@ THE SOFTWARE.
 #define _COLUMN_ALIAS_ 2
 #define _COLUMN_DESCRIPTION_ 3
 
-static void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences *preferences)
+void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences *preferences)
 {
 	window_handler->lua = luaL_newstate();
 	
@@ -94,6 +94,10 @@ static void initialize_lua(struct cwindow_handler *window_handler, struct cprefe
 		
 		lua_pushstring(window_handler->lua, "status_bar");
 		lua_pushlightuserdata(window_handler->lua, window_handler->status_bar);
+		lua_settable(window_handler->lua, -3);
+		
+		lua_pushstring(window_handler->lua, "window_box");
+		lua_pushlightuserdata(window_handler->lua, window_handler->box);
 		lua_settable(window_handler->lua, -3);
 		
 		lua_pushstring(window_handler->lua, "configuration_file");
@@ -2005,13 +2009,11 @@ struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
 	
 	GtkWidget *search_bar = gtk_hbox_new(FALSE, 8);
 	window_handler->search_bar = search_bar;
-	gtk_widget_set_margin_top(search_bar, 4);
 	window_handler->search_entry = gtk_entry_new();
 	g_signal_connect(window_handler->search_entry, "key-press-event", G_CALLBACK(entry_search_key_press_event), window_handler);
 	g_signal_connect(window_handler->search_entry, "key-release-event", G_CALLBACK(entry_search_key_release_event), window_handler);
 	
 	GtkWidget *label = gtk_label_new("Search:");
-	gtk_widget_set_margin_top(label, 8);
 	gtk_widget_set_halign(label, GTK_ALIGN_START);
 	
 	gtk_box_pack_start(GTK_BOX(search_bar), label, FALSE, FALSE, 0);
@@ -2029,13 +2031,11 @@ struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
 	// Replace bar
 	GtkWidget *replace_bar = gtk_hbox_new(FALSE, 8);
 	window_handler->replace_bar = replace_bar;
-	gtk_widget_set_margin_top(replace_bar, 4);
 	window_handler->replace_with_entry = gtk_entry_new();
 	//g_signal_connect(window_handler->search_entry, "key-press-event", G_CALLBACK(entry_search_key_press_event), window_handler);
 	//g_signal_connect(window_handler->search_entry, "key-release-event", G_CALLBACK(entry_search_key_release_event), window_handler);
 	
 	label = gtk_label_new("Replace for:");
-	gtk_widget_set_margin_top(label, 8);
 	gtk_widget_set_halign(label, GTK_ALIGN_START);
 	
 	gtk_box_pack_start(GTK_BOX(replace_bar), label, FALSE, FALSE, 0);
@@ -2059,8 +2059,6 @@ struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
 	window_handler->id_factory = 0;
 	
 	window_handler->preferences = preferences;
-	initialize_lua(window_handler, preferences);
-	
 	
 	gtk_drag_dest_set(window_handler->notebook, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_COPY);
 	gtk_drag_dest_add_text_targets(window_handler->notebook);

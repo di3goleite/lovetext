@@ -82,6 +82,7 @@ struct cwindow_handler
 	struct cpreferences *preferences;
 };
 
+void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences *preferences);
 struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences);
 struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *file_name, gboolean modfied, gchar *text, struct cpreferences *preferences);
 
