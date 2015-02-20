@@ -430,6 +430,26 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 				fwrite(text, sizeof(unsigned char), strlen(text), file);
 				g_free(text);
 				fclose(file);
+				
+				lua_getglobal(window_handler->lua, "editor");
+				if (lua_istable(window_handler->lua, -1)) {
+					lua_pushstring(window_handler->lua, "f_save");
+					lua_gettable(window_handler->lua, -2);
+					if (lua_isfunction(window_handler->lua, -1)) {
+						//window_handler->id_factory = window_handler->id_factory + 1;
+						//lua_pushinteger(window_handler->lua, window_handler->id_factory);
+						lua_pushlightuserdata(window_handler->lua, buffer_ref->source_view);
+						lua_pushstring(window_handler->lua, file_name);
+						if (lua_pcall(window_handler->lua, 2, 0, 0) != LUA_OK) {
+							g_printf("[ERROR] Fail to call editor[\"f_new\"].\n");
+						} else {
+							g_printf("[MESSAGE] Function editor[\"f_new\"] called.\n");
+						}
+					} else {
+						lua_pop(window_handler->lua, 1);
+					}
+				}
+				lua_pop(window_handler->lua, 1);
 			} else {
 				GtkWidget *file_chooser = gtk_file_chooser_dialog_new("Save",
 					NULL,
@@ -454,6 +474,25 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 					g_free(text);
 					fclose(file);
 					buffer_ref->file_name = g_string_assign(buffer_ref->file_name, file_name);
+					lua_getglobal(window_handler->lua, "editor");
+					if (lua_istable(window_handler->lua, -1)) {
+						lua_pushstring(window_handler->lua, "f_save");
+						lua_gettable(window_handler->lua, -2);
+						if (lua_isfunction(window_handler->lua, -1)) {
+							//window_handler->id_factory = window_handler->id_factory + 1;
+							//lua_pushinteger(window_handler->lua, window_handler->id_factory);
+							lua_pushlightuserdata(window_handler->lua, buffer_ref->source_view);
+							lua_pushstring(window_handler->lua, file_name);
+							if (lua_pcall(window_handler->lua, 2, 0, 0) != LUA_OK) {
+								g_printf("[ERROR] Fail to call editor[\"f_new\"].\n");
+							} else {
+								g_printf("[MESSAGE] Function editor[\"f_new\"] called.\n");
+							}
+						} else {
+							lua_pop(window_handler->lua, 1);
+						}
+					}
+					lua_pop(window_handler->lua, 1);
 				}
 				gtk_widget_destroy(file_chooser);
 				update_page_language(window_handler, buffer_ref);
@@ -515,6 +554,26 @@ static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
 				g_free(text);
 				fclose(file);
 				buffer_ref->file_name = g_string_assign(buffer_ref->file_name, file_name);
+				
+				lua_getglobal(window_handler->lua, "editor");
+				if (lua_istable(window_handler->lua, -1)) {
+					lua_pushstring(window_handler->lua, "f_save");
+					lua_gettable(window_handler->lua, -2);
+					if (lua_isfunction(window_handler->lua, -1)) {
+						//window_handler->id_factory = window_handler->id_factory + 1;
+						//lua_pushinteger(window_handler->lua, window_handler->id_factory);
+						lua_pushlightuserdata(window_handler->lua, buffer_ref->source_view);
+						lua_pushstring(window_handler->lua, file_name);
+						if (lua_pcall(window_handler->lua, 2, 0, 0) != LUA_OK) {
+							g_printf("[ERROR] Fail to call editor[\"f_new\"].\n");
+						} else {
+							g_printf("[MESSAGE] Function editor[\"f_new\"] called.\n");
+						}
+					} else {
+						lua_pop(window_handler->lua, 1);
+					}
+				}
+				lua_pop(window_handler->lua, 1);
 			}
 			gtk_widget_destroy(file_chooser);
 			update_page_language(window_handler, buffer_ref);
@@ -682,13 +741,6 @@ static void menu_item_copy_activate(GtkWidget *widget, gpointer user_data)
 	}
 }
 
-static void accel_copy(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
-{
-	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_copy_activate(NULL, user_data);
-	}
-}
-
 static void menu_item_paste_activate(GtkWidget *widget, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.paste\".\n");
@@ -705,13 +757,6 @@ static void menu_item_paste_activate(GtkWidget *widget, gpointer user_data)
 				}
 			}
 		}
-	}
-}
-
-static void accel_paste(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
-{
-	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_paste_activate(NULL, user_data);
 	}
 }
 
@@ -1611,8 +1656,6 @@ static void window_drag_data_received(GtkWidget *widget, GdkDragContext *context
 		length = length - 1;
 	}
 	
-	
-	
 	file_name = file_name + 7;
 	g_printf("\nData received (%i): %s.\n", strlen(file_name), file_name);
 	//gtk_drag_finish(context, TRUE, FALSE, time);
@@ -1726,33 +1769,6 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_close), window_handler, NULL));
-	
-	// Accelerators.
-	gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_Z,
-		GDK_CONTROL_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_undo), window_handler, NULL));
-	gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_Z,
-		GDK_CONTROL_MASK | GDK_SHIFT_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_redo), window_handler, NULL));
-	gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_C,
-		GDK_CONTROL_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_copy), window_handler, NULL));
-	gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_V,
-		GDK_CONTROL_MASK | GDK_SHIFT_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_paste), window_handler, NULL));
-	gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_X,
-		GDK_CONTROL_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_cut), window_handler, NULL));
 	
 	// Accelerators.
 	gtk_accel_group_connect(accelerator_group,
