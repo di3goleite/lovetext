@@ -108,6 +108,8 @@ struct capplication_handler {
 	
 	GMenu *menu_model;
 	
+	lua_State* lua;
+	
 	gboolean help;
 	GOptionContext *option_context;
 	gchar **args;

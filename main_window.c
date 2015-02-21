@@ -59,62 +59,62 @@ THE SOFTWARE.
 
 void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences *preferences)
 {
-	window_handler->lua = luaL_newstate();
-	
-	lua_Number *lua_v = lua_version(window_handler->lua);
+	window_handler->application_handler->lua = luaL_newstate();
+	lua_State* lua = window_handler->application_handler->lua;
+	lua_Number *lua_v = lua_version(lua);
 	
 	if (lua_v) {
 		g_printf("[MESSAGE] Lua version is %s.\n", LUA_VERSION);
 	}
 	
-	luaL_openlibs(window_handler->lua);
-	if (window_handler->lua) {
+	luaL_openlibs(lua);
+	if (lua) {
 		g_printf("[MESSAGE] Lua state created.\n");
 	} else {
 		g_printf("[ERROR] Failed to create lua state.\n");
 		return;
 	}
 	
-	lua_newtable(window_handler->lua);
-	lua_setglobal(window_handler->lua, "editor");
+	lua_newtable(lua);
+	lua_setglobal(lua, "editor");
 	
-	lua_getglobal(window_handler->lua, "editor");
-	if (lua_istable(window_handler->lua, -1)) {
-		lua_pushstring(window_handler->lua, "window");
-		lua_pushlightuserdata(window_handler->lua, window_handler->window);
-		lua_settable(window_handler->lua, -3);
+	lua_getglobal(lua, "editor");
+	if (lua_istable(lua, -1)) {
+		lua_pushstring(lua, "window");
+		lua_pushlightuserdata(lua, window_handler->window);
+		lua_settable(lua, -3);
 		
-		lua_pushstring(window_handler->lua, "menu_bar");
-		lua_pushlightuserdata(window_handler->lua, window_handler->menu_bar);
-		lua_settable(window_handler->lua, -3);
+		lua_pushstring(lua, "menu_bar");
+		lua_pushlightuserdata(lua, window_handler->menu_bar);
+		lua_settable(lua, -3);
 		
-		lua_pushstring(window_handler->lua, "notebook");
-		lua_pushlightuserdata(window_handler->lua, window_handler->notebook);
-		lua_settable(window_handler->lua, -3);
+		lua_pushstring(lua, "notebook");
+		lua_pushlightuserdata(lua, window_handler->notebook);
+		lua_settable(lua, -3);
 		
-		lua_pushstring(window_handler->lua, "status_bar");
-		lua_pushlightuserdata(window_handler->lua, window_handler->status_bar);
-		lua_settable(window_handler->lua, -3);
+		lua_pushstring(lua, "status_bar");
+		lua_pushlightuserdata(lua, window_handler->status_bar);
+		lua_settable(lua, -3);
 		
-		lua_pushstring(window_handler->lua, "window_box");
-		lua_pushlightuserdata(window_handler->lua, window_handler->box);
-		lua_settable(window_handler->lua, -3);
+		lua_pushstring(lua, "window_box");
+		lua_pushlightuserdata(lua, window_handler->box);
+		lua_settable(lua, -3);
 		
-		lua_pushstring(window_handler->lua, "configuration_file");
-		lua_pushlightuserdata(window_handler->lua, preferences->configuration_file);
-		lua_settable(window_handler->lua, -3);
+		lua_pushstring(lua, "configuration_file");
+		lua_pushlightuserdata(lua, preferences->configuration_file);
+		lua_settable(lua, -3);
 		
-		lua_pushstring(window_handler->lua, "accelerator_group");
-		lua_pushlightuserdata(window_handler->lua, window_handler->accelerator_group);
-		lua_settable(window_handler->lua, -3);
+		lua_pushstring(lua, "accelerator_group");
+		lua_pushlightuserdata(lua, window_handler->accelerator_group);
+		lua_settable(lua, -3);
 		
 		if (preferences->program_path) {
-			lua_pushstring(window_handler->lua, "config_path");
-			lua_pushstring(window_handler->lua, preferences->program_path->str);
-			lua_settable(window_handler->lua, -3);
+			lua_pushstring(lua, "config_path");
+			lua_pushstring(lua, preferences->program_path->str);
+			lua_settable(lua, -3);
 		}
 	}
-	lua_pop(window_handler->lua, 1);
+	lua_pop(lua, 1);
 	
 	g_printf("[MESSAGE] Loading base extension.\n");
 	// Load base script.
@@ -124,8 +124,8 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 		base_full_name = g_string_append(base_full_name, "/base.lua");
 	}
 	if (base_full_name) {
-		luaL_loadfile(window_handler->lua, base_full_name->str);
-		if (lua_pcall(window_handler->lua, 0, 0, 0) != LUA_OK) {
+		luaL_loadfile(lua, base_full_name->str);
+		if (lua_pcall(lua, 0, 0, 0) != LUA_OK) {
 			g_printf("[ERROR] Fail to load lua script \"%s\".\n", base_full_name->str);
 		} else {
 			g_printf("[MESSAGE] Lua script \"%s\" loaded.\n", base_full_name->str);
@@ -135,22 +135,22 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 	}
 	
 	// Call the initialization function.
-	lua_getglobal(window_handler->lua, "editor");
-	if (lua_istable(window_handler->lua, -1)) {
-		lua_pushstring(window_handler->lua, "f_initialize");
-		lua_gettable(window_handler->lua, -2);
-		if (lua_isfunction(window_handler->lua, -1)) {
-			lua_pushlightuserdata(window_handler->lua, window_handler->window);
-			if (lua_pcall(window_handler->lua, 1, 0, 0) != LUA_OK) {
+	lua_getglobal(lua, "editor");
+	if (lua_istable(lua, -1)) {
+		lua_pushstring(lua, "f_initialize");
+		lua_gettable(lua, -2);
+		if (lua_isfunction(lua, -1)) {
+			lua_pushlightuserdata(lua, window_handler->window);
+			if (lua_pcall(lua, 1, 0, 0) != LUA_OK) {
 				g_printf("[ERROR] Fail to call editor[\"f_initialize\"].\n");
 			} else {
 				g_printf("[MESSAGE] Function editor[\"f_initialize\"] called.\n");
 			}
 		} else {
-			lua_pop(window_handler->lua, 1);
+			lua_pop(lua, 1);
 		}
 	} else {
-		lua_pop(window_handler->lua, 1);
+		lua_pop(lua, 1);
 	}
 	
 	// Load extension scripts.
@@ -174,8 +174,8 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 						unsigned char *name_extension = strrchr(name, '.');
 						if (name_extension != NULL ) {
 							if (strcmp(name_extension, ".lua") == 0) {
-								luaL_loadfile(window_handler->lua, source_full_name->str);
-								if (lua_pcall(window_handler->lua, 0, 0, 0) != LUA_OK) {
+								luaL_loadfile(lua, source_full_name->str);
+								if (lua_pcall(lua, 0, 0, 0) != LUA_OK) {
 									g_printf("[ERROR] Fail to load lua script \"%s\".\n", source_full_name->str);
 								} else {
 									g_printf("[MESSAGE] Lua script \"%s\" loaded.\n", source_full_name->str);
@@ -194,22 +194,53 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 	}
 	
 	// Call the plugins initialization functions
-	lua_getglobal(window_handler->lua, "editor");
-	if (lua_istable(window_handler->lua, -1)) {
-		lua_pushstring(window_handler->lua, "f_initialize_plugins");
-		lua_gettable(window_handler->lua, -2);
-		if (lua_isfunction(window_handler->lua, -1)) {
-			lua_pushlightuserdata(window_handler->lua, window_handler->window);
-			if (lua_pcall(window_handler->lua, 1, 0, 0) != LUA_OK) {
+	lua_getglobal(lua, "editor");
+	if (lua_istable(lua, -1)) {
+		lua_pushstring(lua, "f_initialize_plugins");
+		lua_gettable(lua, -2);
+		if (lua_isfunction(lua, -1)) {
+			lua_pushlightuserdata(lua, window_handler->window);
+			if (lua_pcall(lua, 1, 0, 0) != LUA_OK) {
 				g_printf("[ERROR] Fail to call editor[\"f_initialize_plugins\"].\n");
 			} else {
 				g_printf("[MESSAGE] Function editor[\"f_initialize_plugins\"] called.\n");
 			}
 		} else {
-			lua_pop(window_handler->lua, 1);
+			lua_pop(lua, 1);
 		}
 	} else {
-		lua_pop(window_handler->lua, 1);
+		lua_pop(lua, 1);
+	}
+	
+	// Send pages to Lua side.
+	int i = 0;
+	struct cbuffer_ref *buffer_ref = NULL;
+	GtkWidget *widget = NULL;
+	while (i < gtk_notebook_get_n_pages(window_handler->notebook)) {
+		widget = gtk_notebook_get_nth_page(window_handler->notebook, i);
+		if (widget) {
+			buffer_ref = g_object_get_data(widget, "buf_ref");
+			if (buffer_ref) {
+				lua_getglobal(lua, "editor");
+				if (lua_istable(lua, -1)) {
+					lua_pushstring(lua, "f_new");
+					lua_gettable(lua, -2);
+					if (lua_isfunction(lua, -1)) {
+						lua_pushlightuserdata(lua, buffer_ref->source_view);
+						lua_pushstring(lua, buffer_ref->file_name->str);
+						if (lua_pcall(lua, 2, 0, 0) != LUA_OK) {
+							g_printf("[ERROR] Fail to call editor[\"f_new\"].\n");
+						} else {
+							g_printf("[MESSAGE] Function editor[\"f_new\"] called.\n");
+						}
+					} else {
+						lua_pop(lua, 1);
+					}
+				}
+				lua_pop(lua, 1);
+			}
+		}
+		i = i + 1;
 	}
 	g_printf("[MESSAGE] Lua initialized.\n");
 }
@@ -410,6 +441,7 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.save\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	lua_State* lua = window_handler->application_handler->lua;
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	if (scrolled_window) {
@@ -431,25 +463,25 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 				g_free(text);
 				fclose(file);
 				
-				lua_getglobal(window_handler->lua, "editor");
-				if (lua_istable(window_handler->lua, -1)) {
-					lua_pushstring(window_handler->lua, "f_save");
-					lua_gettable(window_handler->lua, -2);
-					if (lua_isfunction(window_handler->lua, -1)) {
+				lua_getglobal(lua, "editor");
+				if (lua_istable(lua, -1)) {
+					lua_pushstring(lua, "f_save");
+					lua_gettable(lua, -2);
+					if (lua_isfunction(lua, -1)) {
 						//window_handler->id_factory = window_handler->id_factory + 1;
-						//lua_pushinteger(window_handler->lua, window_handler->id_factory);
-						lua_pushlightuserdata(window_handler->lua, buffer_ref->source_view);
-						lua_pushstring(window_handler->lua, file_name);
-						if (lua_pcall(window_handler->lua, 2, 0, 0) != LUA_OK) {
-							g_printf("[ERROR] Fail to call editor[\"f_new\"].\n");
+						//lua_pushinteger(lua, window_handler->id_factory);
+						lua_pushlightuserdata(lua, buffer_ref->source_view);
+						lua_pushstring(lua, file_name);
+						if (lua_pcall(lua, 2, 0, 0) != LUA_OK) {
+							g_printf("[ERROR] Fail to call editor[\"f_save\"].\n");
 						} else {
-							g_printf("[MESSAGE] Function editor[\"f_new\"] called.\n");
+							g_printf("[MESSAGE] Function editor[\"f_save\"] called.\n");
 						}
 					} else {
-						lua_pop(window_handler->lua, 1);
+						lua_pop(lua, 1);
 					}
 				}
-				lua_pop(window_handler->lua, 1);
+				lua_pop(lua, 1);
 			} else {
 				GtkWidget *file_chooser = gtk_file_chooser_dialog_new("Save",
 					NULL,
@@ -474,25 +506,25 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 					g_free(text);
 					fclose(file);
 					buffer_ref->file_name = g_string_assign(buffer_ref->file_name, file_name);
-					lua_getglobal(window_handler->lua, "editor");
-					if (lua_istable(window_handler->lua, -1)) {
-						lua_pushstring(window_handler->lua, "f_save");
-						lua_gettable(window_handler->lua, -2);
-						if (lua_isfunction(window_handler->lua, -1)) {
+					lua_getglobal(lua, "editor");
+					if (lua_istable(lua, -1)) {
+						lua_pushstring(lua, "f_save");
+						lua_gettable(lua, -2);
+						if (lua_isfunction(lua, -1)) {
 							//window_handler->id_factory = window_handler->id_factory + 1;
-							//lua_pushinteger(window_handler->lua, window_handler->id_factory);
-							lua_pushlightuserdata(window_handler->lua, buffer_ref->source_view);
-							lua_pushstring(window_handler->lua, file_name);
-							if (lua_pcall(window_handler->lua, 2, 0, 0) != LUA_OK) {
-								g_printf("[ERROR] Fail to call editor[\"f_new\"].\n");
+							//lua_pushinteger(lua, window_handler->id_factory);
+							lua_pushlightuserdata(lua, buffer_ref->source_view);
+							lua_pushstring(lua, file_name);
+							if (lua_pcall(lua, 2, 0, 0) != LUA_OK) {
+								g_printf("[ERROR] Fail to call editor[\"f_save\"].\n");
 							} else {
-								g_printf("[MESSAGE] Function editor[\"f_new\"] called.\n");
+								g_printf("[MESSAGE] Function editor[\"f_save\"] called.\n");
 							}
 						} else {
-							lua_pop(window_handler->lua, 1);
+							lua_pop(lua, 1);
 						}
 					}
-					lua_pop(window_handler->lua, 1);
+					lua_pop(lua, 1);
 				}
 				gtk_widget_destroy(file_chooser);
 				update_page_language(window_handler, buffer_ref);
@@ -525,6 +557,7 @@ static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.save_as\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	lua_State* lua = window_handler->application_handler->lua;
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	if (scrolled_window) {
@@ -555,25 +588,25 @@ static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
 				fclose(file);
 				buffer_ref->file_name = g_string_assign(buffer_ref->file_name, file_name);
 				
-				lua_getglobal(window_handler->lua, "editor");
-				if (lua_istable(window_handler->lua, -1)) {
-					lua_pushstring(window_handler->lua, "f_save");
-					lua_gettable(window_handler->lua, -2);
-					if (lua_isfunction(window_handler->lua, -1)) {
+				lua_getglobal(lua, "editor");
+				if (lua_istable(lua, -1)) {
+					lua_pushstring(lua, "f_save");
+					lua_gettable(lua, -2);
+					if (lua_isfunction(lua, -1)) {
 						//window_handler->id_factory = window_handler->id_factory + 1;
-						//lua_pushinteger(window_handler->lua, window_handler->id_factory);
-						lua_pushlightuserdata(window_handler->lua, buffer_ref->source_view);
-						lua_pushstring(window_handler->lua, file_name);
-						if (lua_pcall(window_handler->lua, 2, 0, 0) != LUA_OK) {
-							g_printf("[ERROR] Fail to call editor[\"f_new\"].\n");
+						//lua_pushinteger(lua, window_handler->id_factory);
+						lua_pushlightuserdata(lua, buffer_ref->source_view);
+						lua_pushstring(lua, file_name);
+						if (lua_pcall(lua, 2, 0, 0) != LUA_OK) {
+							g_printf("[ERROR] Fail to call editor[\"f_save\"].\n");
 						} else {
-							g_printf("[MESSAGE] Function editor[\"f_new\"] called.\n");
+							g_printf("[MESSAGE] Function editor[\"f_save\"] called.\n");
 						}
 					} else {
-						lua_pop(window_handler->lua, 1);
+						lua_pop(lua, 1);
 					}
 				}
-				lua_pop(window_handler->lua, 1);
+				lua_pop(lua, 1);
 			}
 			gtk_widget_destroy(file_chooser);
 			update_page_language(window_handler, buffer_ref);
@@ -985,30 +1018,29 @@ static void menu_item_refresh_plugins_activate(GtkWidget *widget, gpointer user_
 {
 	g_printf("[MESSAGE] Performing action \"window.refresh_plugins\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	lua_State* lua = window_handler->application_handler->lua;
 	// Call the initialization function.
-	lua_getglobal(window_handler->lua, "editor");
-	if (lua_istable(window_handler->lua, -1)) {
-		lua_pushstring(window_handler->lua, "f_refresh");
-		lua_gettable(window_handler->lua, -2);
-		if (lua_isfunction(window_handler->lua, -1)) {
-			if (lua_pcall(window_handler->lua, 0, 0, 0) != LUA_OK) {
-				g_printf("[ERROR] Fail to call editor[\"f_refresh\"].\n");
+	lua_getglobal(lua, "editor");
+	if (lua_istable(lua, -1)) {
+		lua_pushstring(lua, "f_terminate");
+		lua_gettable(lua, -2);
+		if (lua_isfunction(lua, -1)) {
+			if (lua_pcall(lua, 0, 0, 0) != LUA_OK) {
+				g_printf("[ERROR] Fail to call editor[\"f_terminate\"].\n");
 			} else {
-				g_printf("[MESSAGE] Function editor[\"f_refresh\"] called.\n");
+				g_printf("[MESSAGE] Function editor[\"f_terminate\"] called.\n");
 			}
 		} else {
-			lua_pop(window_handler->lua, 1);
+			lua_pop(lua, 1);
 		}
 	} else {
-		lua_pop(window_handler->lua, 1);
+		lua_pop(lua, 1);
 	}
-	
-	if (window_handler->lua) {
-		lua_close(window_handler->lua);
-		window_handler->lua = NULL;
+	if (lua) {
+		lua_close(lua);
+		lua = NULL;
 	}
-	
-	window_handler->lua = luaL_newstate();
+	lua = luaL_newstate();
 	initialize_lua(window_handler, window_handler->preferences);
 }
 
@@ -1240,6 +1272,7 @@ static void button_close_tab_clicked(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	struct cbuffer_ref *buffer_ref = g_object_get_data(widget, "buf_ref");
+	lua_State* lua = window_handler->application_handler->lua;
 	
 	if (buffer_ref->scrolled_window) {
 		GtkWidget *source_view = gtk_container_get_focus_child(buffer_ref->scrolled_window);
@@ -1247,27 +1280,28 @@ static void button_close_tab_clicked(GtkWidget *widget, gpointer user_data)
 			gtk_notebook_page_num(window_handler->notebook, buffer_ref->scrolled_window));
 		//gtk_widget_destroy(source_view);
 		//gtk_widget_destroy(scrolled_window);
-		lua_getglobal(window_handler->lua, "editor");
-		if (lua_istable(window_handler->lua, -1)) {
-			lua_pushstring(window_handler->lua, "f_close");
-			lua_gettable(window_handler->lua, -2);
-			if (lua_isfunction(window_handler->lua, -1)) {
-				lua_pushlightuserdata(window_handler->lua, buffer_ref->source_view);
-				if (lua_pcall(window_handler->lua, 1, 0, 0) != LUA_OK) {
+		lua_getglobal(lua, "editor");
+		if (lua_istable(lua, -1)) {
+			lua_pushstring(lua, "f_close");
+			lua_gettable(lua, -2);
+			if (lua_isfunction(lua, -1)) {
+				lua_pushlightuserdata(lua, buffer_ref->source_view);
+				if (lua_pcall(lua, 1, 0, 0) != LUA_OK) {
 					g_printf("[ERROR] Fail to call editor[\"f_close\"].\n");
 				} else {
 					g_printf("[MESSAGE] Function editor[\"f_close\"] called.\n");
 				}
 			} else {
-				lua_pop(window_handler->lua, 1);
+				lua_pop(lua, 1);
 			}
 		}
-		lua_pop(window_handler->lua, 1);
+		lua_pop(lua, 1);
 	}
 }
 
 struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *file_name, gboolean modified, gchar *text, struct cpreferences *preferences)
 {
+	lua_State* lua = window_handler->application_handler->lua;
 	struct cbuffer_ref *buffer_ref = (struct cbuffer_ref *)malloc(sizeof(struct cbuffer_ref));
 	buffer_ref->file_name = g_string_new(file_name);
 	buffer_ref->modified = modified;
@@ -1325,6 +1359,11 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	
 	GtkWidget *tab = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
 	GtkWidget *label = gtk_label_new("Untitled");
+	
+	gchar *separator = strrchr(buffer_ref->file_name->str, '/');
+	if (separator) {
+		gtk_label_set_text(label, ++separator);
+	}
 	GtkWidget *button_close = gtk_button_new_from_icon_name("gtk-close", GTK_ICON_SIZE_BUTTON);
 	g_object_set_data(button_close, "buf_ref", buffer_ref);
 	g_signal_connect(button_close, "clicked", G_CALLBACK(button_close_tab_clicked), window_handler);
@@ -1347,25 +1386,25 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	rgba.alpha = 1.0;
 	gtk_widget_override_color(label, GTK_STATE_FLAG_ACTIVE, &rgba);
 	
-	lua_getglobal(window_handler->lua, "editor");
-	if (lua_istable(window_handler->lua, -1)) {
-		lua_pushstring(window_handler->lua, "f_new");
-		lua_gettable(window_handler->lua, -2);
-		if (lua_isfunction(window_handler->lua, -1)) {
+	lua_getglobal(lua, "editor");
+	if (lua_istable(lua, -1)) {
+		lua_pushstring(lua, "f_new");
+		lua_gettable(lua, -2);
+		if (lua_isfunction(lua, -1)) {
 			//window_handler->id_factory = window_handler->id_factory + 1;
-			//lua_pushinteger(window_handler->lua, window_handler->id_factory);
-			lua_pushlightuserdata(window_handler->lua, buffer_ref->source_view);
-			lua_pushstring(window_handler->lua, file_name);
-			if (lua_pcall(window_handler->lua, 2, 0, 0) != LUA_OK) {
+			//lua_pushinteger(lua, window_handler->id_factory);
+			lua_pushlightuserdata(lua, buffer_ref->source_view);
+			lua_pushstring(lua, file_name);
+			if (lua_pcall(lua, 2, 0, 0) != LUA_OK) {
 				g_printf("[ERROR] Fail to call editor[\"f_new\"].\n");
 			} else {
 				g_printf("[MESSAGE] Function editor[\"f_new\"] called.\n");
 			}
 		} else {
-			lua_pop(window_handler->lua, 1);
+			lua_pop(lua, 1);
 		}
 	}
-	lua_pop(window_handler->lua, 1);
+	lua_pop(lua, 1);
 	return buffer_ref;
 }
 
@@ -1501,6 +1540,7 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	struct cpreferences *preferences = window_handler->preferences;
+	g_printf("[MESSAGE] Closing main window.\n");
 	
 	gchar *scheme_id = gtk_source_style_scheme_get_id(preferences->scheme);
 	g_key_file_set_string(preferences->configuration_file,
@@ -1591,13 +1631,29 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 		g_printf("[ERROR] Configuration not saved. Lack configuration file path.\n");
 	}
 	
-	gtk_main_quit();
-	free(window_handler);
+	lua_State* lua = window_handler->application_handler->lua;
+	lua_getglobal(lua, "editor");
+	if (lua_istable(lua, -1)) {
+		lua_pushstring(lua, "f_terminate");
+		lua_gettable(lua, -2);
+		if (lua_isfunction(lua, -1)) {
+			if (lua_pcall(lua, 0, 0, 0) != LUA_OK) {
+				g_printf("[ERROR] Fail to call editor[\"f_terminate\"].\n");
+			} else {
+				g_printf("[MESSAGE] Function editor[\"f_terminate\"] called.\n");
+			}
+		} else {
+			lua_pop(lua, 1);
+		}
+	} else {
+		lua_pop(lua, 1);
+	}
 }
 
 static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint page_num, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	lua_State* lua = window_handler->application_handler->lua;
 	g_printf("[MESSAGE] Page switched. Calling Lua function editor[\"f_page_switch\"].\n");
 	
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
@@ -1620,23 +1676,23 @@ static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint p
 			title = g_string_append(title, " - ");
 			title = g_string_append(title, buffer_ref->file_name->str);
 		}
-		lua_getglobal(window_handler->lua, "editor");
-		if (lua_istable(window_handler->lua, -1)) {
-			lua_pushstring(window_handler->lua, "f_page_switch");
-			lua_gettable(window_handler->lua, -2);
-			if (lua_isfunction(window_handler->lua, -1)) {
+		lua_getglobal(lua, "editor");
+		if (lua_istable(lua, -1)) {
+			lua_pushstring(lua, "f_page_switch");
+			lua_gettable(lua, -2);
+			if (lua_isfunction(lua, -1)) {
 				g_printf("[MESSAGE] Passing widget as Lua user-data.\n");
-				lua_pushlightuserdata(window_handler->lua, (void *)buffer_ref->source_view);
-				if (lua_pcall(window_handler->lua, 1, 0, 0) != LUA_OK) {
+				lua_pushlightuserdata(lua, (void *)buffer_ref->source_view);
+				if (lua_pcall(lua, 1, 0, 0) != LUA_OK) {
 					g_printf("[ERROR] Fail to call editor[\"f_page_switch\"].\n");
 				} else {
 					g_printf("[MESSAGE] Function editor[\"f_page_switch\"] called.\n");
 				}
 			} else {
-				lua_pop(window_handler->lua, 1);
+				lua_pop(lua, 1);
 			}
 		}
-		lua_pop(window_handler->lua, 1);
+		lua_pop(lua, 1);
 	}
 	gtk_window_set_title(window_handler->window, title->str);
 	g_string_free(title, TRUE);
@@ -1658,7 +1714,7 @@ static void window_drag_data_received(GtkWidget *widget, GdkDragContext *context
 	
 	file_name = file_name + 7;
 	g_printf("\nData received (%i): %s.\n", strlen(file_name), file_name);
-	//gtk_drag_finish(context, TRUE, FALSE, time);
+	gtk_drag_finish(context, TRUE, FALSE, time);
 	
 	unsigned char *last_separator = strrchr(file_name, '/');
 	unsigned char *file_only_name = last_separator + 1;
@@ -1673,14 +1729,9 @@ static void window_drag_data_received(GtkWidget *widget, GdkDragContext *context
 	struct cbuffer_ref *buffer_ref = create_page(window_handler, file_name, FALSE, text, window_handler->preferences);
 	gtk_source_buffer_begin_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
 	
-	gtk_label_set_text(buffer_ref->label, file_only_name);
 	gint index = gtk_notebook_append_page(GTK_NOTEBOOK(window_handler->notebook),
 		buffer_ref->scrolled_window, buffer_ref->tab);
 	gtk_widget_show_all(buffer_ref->tab);
-	buffer_ref->file_name = g_string_assign(buffer_ref->file_name, file_name);
-	GtkWidget *label = gtk_notebook_get_tab_label(window_handler->notebook, buffer_ref->scrolled_window);
-	gchar *separator = strrchr(buffer_ref->file_name->str, '/');
-	gtk_label_set_text(label, ++separator);
 	
 	gtk_widget_show_all(buffer_ref->scrolled_window);
 	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window, TRUE);
@@ -1991,7 +2042,6 @@ struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
 	g_signal_connect(window_handler->window, "key-release-event", G_CALLBACK(window_key_release_event), window_handler);
 	
 	window_handler->drag_and_drop = FALSE;
-	window_handler->lua = NULL;
 	gtk_window_set_icon_name(GTK_WINDOW(window_handler->window), "lovetext");
 	gtk_window_set_title(GTK_WINDOW(window_handler->window), "Love Text");
 	gtk_widget_set_size_request(GTK_WINDOW(window_handler->window), 480, 380);
