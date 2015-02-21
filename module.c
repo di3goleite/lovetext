@@ -215,6 +215,7 @@ struct capplication_handler *alloc_application_handler(void)
 	application_handler->version = FALSE;
 	application_handler->help = FALSE;
 	application_handler->file_name_input = NULL;
+	application_handler->lua = NULL;
 	return application_handler;
 }
 

@@ -188,7 +188,11 @@ int main(int argc, char *args[])
 	
 	//gtk_main();
 	g_application_run(application, argc, args);
+	g_printf("[MESSAGE] Terminating application.\n");
 	g_object_unref(application);
+	g_printf("[MESSAGE] Closing Lua state.\n");
+	lua_close(application_handler->lua);
+	g_printf("[MESSAGE] Done.\n");
 	
 	return 0;
 }

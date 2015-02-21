@@ -77,8 +77,6 @@ struct cwindow_handler
 	
 	struct cwindow_preferences_handler *window_preferences_handler;
 	GString *program_folder;
-	lua_State* lua;
-	
 	struct cpreferences *preferences;
 };
 
