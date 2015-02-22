@@ -59,6 +59,7 @@ THE SOFTWARE.
 
 void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences *preferences)
 {
+	g_printf("[MESSAGE] Initializing Lua.\n");
 	window_handler->application_handler->lua = luaL_newstate();
 	lua_State* lua = window_handler->application_handler->lua;
 	lua_Number *lua_v = lua_version(lua);
@@ -100,8 +101,12 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 		lua_pushlightuserdata(lua, window_handler->box);
 		lua_settable(lua, -3);
 		
-		lua_pushstring(lua, "configuration_file");
-		lua_pushlightuserdata(lua, preferences->configuration_file);
+		lua_pushstring(lua, "configuration_directory");
+		if ( preferences->program_path) {
+			lua_pushstring(lua, preferences->program_path->str);
+		} else {
+			lua_pushstring(lua, "");
+		}
 		lua_settable(lua, -3);
 		
 		lua_pushstring(lua, "accelerator_group");
