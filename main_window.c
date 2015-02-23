@@ -380,11 +380,12 @@ static void menu_item_open_activate(GtkWidget *widget, gpointer user_data)
 	gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
 	gtk_file_chooser_set_current_folder(file_chooser, window_handler->preferences->last_path->str);
 	
+	g_printf("[MESSAGE] Running dialog window.\n");
 	if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
 		GSList *filenames = gtk_file_chooser_get_filenames(file_chooser);
 		GSList *iterator = filenames;
 		while (iterator) {
-			gchar *file_name = iterator->data;//gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
+			gchar *file_name = iterator->data;
 			GtkWidget *source_view = NULL;
 			if (source_view) {
 				g_printf("[MESSAGE] File already open.\n");
@@ -403,7 +404,7 @@ static void menu_item_open_activate(GtkWidget *widget, gpointer user_data)
 				memset(text, 0, sizeof(unsigned char) * size + 1);
 				fseek(file, 0, SEEK_SET);
 				fread(text, sizeof(unsigned char), size, file);
-			
+				
 				struct cbuffer_ref *buffer_ref = create_page(window_handler, file_name, FALSE, text, window_handler->preferences);
 				gtk_source_buffer_begin_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
 				
@@ -414,16 +415,15 @@ static void menu_item_open_activate(GtkWidget *widget, gpointer user_data)
 				buffer_ref->file_name = g_string_assign(buffer_ref->file_name, file_name);
 				gchar *separator = strrchr(buffer_ref->file_name->str, '/');
 				gtk_label_set_text(buffer_ref->label, ++separator);
-			
+				
 				gtk_widget_show_all(buffer_ref->scrolled_window);
 				gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window, TRUE);
 				fclose(file);
-			
+				
 				gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook), index);
 				update_page_language(window_handler, buffer_ref);
 				update_styles(window_handler);
 				update_providers(window_handler);
-				//update_completion_providers(window_handler);
 				
 				gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
 				gtk_source_buffer_end_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
@@ -473,8 +473,6 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 					lua_pushstring(lua, "f_save");
 					lua_gettable(lua, -2);
 					if (lua_isfunction(lua, -1)) {
-						//window_handler->id_factory = window_handler->id_factory + 1;
-						//lua_pushinteger(lua, window_handler->id_factory);
 						lua_pushlightuserdata(lua, buffer_ref->source_view);
 						lua_pushstring(lua, file_name);
 						if (lua_pcall(lua, 2, 0, 0) != LUA_OK) {
@@ -668,16 +666,37 @@ static void menu_item_close_activate(GtkWidget *widget, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.close\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	lua_State *lua = window_handler->application_handler->lua;
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	
 	if (scrolled_window) {
 		GtkWidget *source_view = gtk_container_get_focus_child(scrolled_window);
+		struct cbuffer_ref *buffer_ref = g_object_get_data(source_view, "buf_ref");
+		if (buffer_ref) {
+			lua_getglobal(lua, "editor");
+			if (lua_istable(lua, -1)) {
+				lua_pushstring(lua, "f_close");
+				lua_gettable(lua, -2);
+				if (lua_isfunction(lua, -1)) {
+					lua_pushlightuserdata(lua, buffer_ref->source_view);
+					if (lua_pcall(lua, 1, 0, 0) != LUA_OK) {
+						g_printf("[ERROR] Fail to call editor[\"f_close\"].\n");
+					} else {
+						g_printf("[MESSAGE] Function editor[\"f_close\"] called.\n");
+					}
+				} else {
+					lua_pop(lua, 1);
+				}
+			}
+			lua_pop(lua, 1);
+		}
 		gtk_notebook_remove_page(GTK_NOTEBOOK(window_handler->notebook),
 			gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 		if (gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook)) <= 0) {
 			gtk_window_set_title(window_handler->window, "Love Text");
 		}
+		
 	}
 }
 
@@ -1306,6 +1325,7 @@ static void button_close_tab_clicked(GtkWidget *widget, gpointer user_data)
 
 struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *file_name, gboolean modified, gchar *text, struct cpreferences *preferences)
 {
+	g_printf("[MESSAGE] Creating new page.\n");
 	lua_State* lua = window_handler->application_handler->lua;
 	struct cbuffer_ref *buffer_ref = (struct cbuffer_ref *)malloc(sizeof(struct cbuffer_ref));
 	buffer_ref->file_name = g_string_new(file_name);
@@ -1352,7 +1372,6 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	gtk_adjustment_set_step_increment(vadjustment, 0.1);
 	gtk_container_add(buffer_ref->scrolled_window, buffer_ref->source_view);
 	
-	//g_signal_connect_after(buffer_ref->source_view, "draw", G_CALLBACK(source_view_draw), window_handler);
 	g_signal_connect(buffer_ref->source_view, "key-press-event", G_CALLBACK(source_view_key_press_event), window_handler);
 	g_signal_connect(buffer_ref->source_view, "key-release-event", G_CALLBACK(source_view_key_release_event), window_handler);
 	
@@ -1391,13 +1410,12 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	rgba.alpha = 1.0;
 	gtk_widget_override_color(label, GTK_STATE_FLAG_ACTIVE, &rgba);
 	
+	g_printf("[MESSAGE] Sending widget to Lua state.\n");
 	lua_getglobal(lua, "editor");
 	if (lua_istable(lua, -1)) {
 		lua_pushstring(lua, "f_new");
 		lua_gettable(lua, -2);
 		if (lua_isfunction(lua, -1)) {
-			//window_handler->id_factory = window_handler->id_factory + 1;
-			//lua_pushinteger(lua, window_handler->id_factory);
 			lua_pushlightuserdata(lua, buffer_ref->source_view);
 			lua_pushstring(lua, file_name);
 			if (lua_pcall(lua, 2, 0, 0) != LUA_OK) {
@@ -1410,6 +1428,7 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 		}
 	}
 	lua_pop(lua, 1);
+	g_printf("[MESSAGE] New page created.\n");
 	return buffer_ref;
 }
 
