@@ -171,16 +171,6 @@ static gboolean entry_custom_gtk_theme_key_press_event(GtkWidget *widget, GdkEve
 		window_preferences_handler->preferences->gtk_theme = g_strdup(text);
 		g_printf("Theme: %s.\n", window_preferences_handler->preferences->gtk_theme);
 	}
-	
-	/*
-	// Run-time update.
-	GtkSettings *settings = gtk_settings_get_default();
-	
-	if ((window_preferences_handler->preferences->use_custom_gtk_theme) && (window_preferences_handler->preferences->gtk_theme)) {
-		g_printf("[MESSAGE] Setting custom theme.\n");
-		g_object_set(settings, "gtk-theme-name", window_preferences_handler->preferences->gtk_theme, NULL);
-	}
-	*/
 	return FALSE;
 }
 

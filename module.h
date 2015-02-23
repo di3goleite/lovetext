@@ -93,7 +93,7 @@ struct cpreferences
 	GtkSourceStyleScheme *scheme;
 	GtkSourceStyleSchemeManager *style_scheme_manager;
 	GtkSourceLanguageManager *language_manager;
-	gchar **scheme_ids;
+	const gchar * const *scheme_ids;
 	PangoFontDescription *font_desc;
 	GString *editor_font;
 };

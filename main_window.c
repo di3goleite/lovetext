@@ -348,14 +348,6 @@ static void menu_item_new_activate(GtkWidget *widget, gpointer user_data)
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	struct cbuffer_ref *buffer_ref = create_page(window_handler, "", FALSE, "", window_handler->preferences);
 	
-	gtk_label_set_text(buffer_ref->label, "Untitled");
-	gint index = gtk_notebook_append_page(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window, buffer_ref->tab);
-	gtk_widget_show_all(buffer_ref->tab);
-	gtk_widget_show_all(buffer_ref->scrolled_window);
-	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window, TRUE);
-	gtk_notebook_set_show_border(GTK_NOTEBOOK(window_handler->notebook), FALSE);
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook), index);
-	
 	update_styles(window_handler);
 }
 
@@ -406,28 +398,11 @@ static void menu_item_open_activate(GtkWidget *widget, gpointer user_data)
 				fread(text, sizeof(unsigned char), size, file);
 				
 				struct cbuffer_ref *buffer_ref = create_page(window_handler, file_name, FALSE, text, window_handler->preferences);
-				gtk_source_buffer_begin_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
-				
-				gtk_label_set_text(buffer_ref->label, file_only_name);
-				gint index = gtk_notebook_append_page(GTK_NOTEBOOK(window_handler->notebook),
-					buffer_ref->scrolled_window, buffer_ref->tab);
-				gtk_widget_show_all(buffer_ref->tab);
-				buffer_ref->file_name = g_string_assign(buffer_ref->file_name, file_name);
-				gchar *separator = strrchr(buffer_ref->file_name->str, '/');
-				gtk_label_set_text(buffer_ref->label, ++separator);
-				
-				gtk_widget_show_all(buffer_ref->scrolled_window);
-				gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window, TRUE);
 				fclose(file);
 				
-				gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook), index);
 				update_page_language(window_handler, buffer_ref);
 				update_styles(window_handler);
 				update_providers(window_handler);
-				
-				gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
-				gtk_source_buffer_end_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
-				gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
 			}
 			iterator = g_slist_next(iterator);
 		}
@@ -1410,6 +1385,24 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	rgba.alpha = 1.0;
 	gtk_widget_override_color(label, GTK_STATE_FLAG_ACTIVE, &rgba);
 	
+	gint index = gtk_notebook_append_page(GTK_NOTEBOOK(window_handler->notebook),
+		buffer_ref->scrolled_window, buffer_ref->tab);
+	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window, TRUE);
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook), index);
+	gtk_widget_show_all(buffer_ref->tab);
+	gtk_widget_show_all(buffer_ref->scrolled_window);
+	
+	gtk_source_buffer_begin_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
+	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
+	gtk_source_buffer_end_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
+	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
+	
+	GtkTextIter start_iter;
+	gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(buffer_ref->source_view), &start_iter);
+	gtk_text_buffer_place_cursor(gtk_text_view_get_buffer(buffer_ref->source_view),
+		&start_iter);
+	
+	gtk_widget_grab_focus(buffer_ref->source_view);
 	g_printf("[MESSAGE] Sending widget to Lua state.\n");
 	lua_getglobal(lua, "editor");
 	if (lua_istable(lua, -1)) {
@@ -1751,25 +1744,12 @@ static void window_drag_data_received(GtkWidget *widget, GdkDragContext *context
 	fread(text, sizeof(unsigned char), size, file);
 	
 	struct cbuffer_ref *buffer_ref = create_page(window_handler, file_name, FALSE, text, window_handler->preferences);
-	gtk_source_buffer_begin_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
-	
-	gint index = gtk_notebook_append_page(GTK_NOTEBOOK(window_handler->notebook),
-		buffer_ref->scrolled_window, buffer_ref->tab);
-	gtk_widget_show_all(buffer_ref->tab);
-	
-	gtk_widget_show_all(buffer_ref->scrolled_window);
-	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window, TRUE);
 	fclose(file);
 
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook), index);
 	update_page_language(window_handler, buffer_ref);
 	update_styles(window_handler);
 	update_providers(window_handler);
 	//update_completion_providers(window_handler);
-	
-	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
-	gtk_source_buffer_end_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
-	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
 	
 	window_handler->drag_and_drop = FALSE;
 }
