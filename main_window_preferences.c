@@ -56,6 +56,17 @@ static void cell_renderer_toggle_toggled(GtkCellRendererToggle *cell_renderer, g
 	g_free(path_string);
 }*/
 
+static void combo_box_text_changed(GtkWidget *widget, gpointer user_data)
+{
+	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
+	int index = gtk_combo_box_get_active(widget);
+	
+	if (index > -1) {
+		gtk_notebook_set_tab_pos(window_preferences_handler->main_window_notebook, index);
+	}
+	window_preferences_handler->preferences->tabs_position = gtk_notebook_get_tab_pos(window_preferences_handler->main_window_notebook);
+}
+
 static void check_button_use_custom_gtk_theme(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
@@ -235,6 +246,21 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpre
 	g_signal_connect(widget, "key-release-event", G_CALLBACK(entry_custom_gtk_theme_key_press_event), window_preferences_handler);
 	gtk_widget_set_tooltip_markup(widget, "Select a gtk2 theme by informing the <b>directory</b> where the theme is located.");
 	gtk_box_pack_start(GTK_BOX(box_group), widget, TRUE, FALSE, 0);
+	
+	widget = gtk_label_new("Tabs position:");
+	gtk_widget_set_margin_top(widget, 8);
+	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
+	
+	widget = gtk_combo_box_text_new();
+	window_preferences_handler->combo_box_tab_pos = widget;
+	gtk_widget_set_margin_top(widget, 2);
+	gtk_combo_box_text_append(widget, "left", "Left");
+	gtk_combo_box_text_append(widget, "right", "Right");
+	gtk_combo_box_text_append(widget, "top", "Top");
+	gtk_combo_box_text_append(widget, "bottom", "Bottom");
+	g_signal_connect(widget, "changed", G_CALLBACK(combo_box_text_changed), window_preferences_handler);
+	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
+	
 	gtk_box_pack_start(GTK_BOX(box_page), box_group, FALSE, FALSE, 0);
 	
 	gtk_widget_show_all(box_page);
