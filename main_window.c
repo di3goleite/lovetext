@@ -622,12 +622,15 @@ static void menu_item_preferences_activate(GtkWidget *widget, gpointer user_data
 	window_handler->window_preferences_handler = alloc_window_preferences_handler(window_handler->preferences);
 	if (window_handler->window_preferences_handler) {
 		// Circular reference.
+		window_handler->window_preferences_handler->main_window_notebook = window_handler->notebook;
 		window_handler->window_preferences_handler->window_handler = window_handler;
 		window_handler->window_preferences_handler->update_editor = update_editor;
 		
+		int index = gtk_notebook_get_tab_pos(window_handler->notebook);
+		gtk_combo_box_set_active(window_handler->window_preferences_handler->combo_box_tab_pos, index);
+		gtk_widget_show_all(window_handler->window_preferences_handler->window);
+		gtk_window_set_transient_for(window_handler->window_preferences_handler->window, window_handler->window);
 	}
-	gtk_widget_show_all(window_handler->window_preferences_handler->window);
-	gtk_window_set_transient_for(window_handler->window_preferences_handler->window, window_handler->window);
 }
 
 static void accel_preferences(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
@@ -1604,6 +1607,11 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 		"general",
 		"use_custom_gtk_theme",
 		preferences->use_custom_gtk_theme);
+	
+	g_key_file_set_integer(preferences->configuration_file,
+		"general",
+		"tabs_position",
+		preferences->tabs_position);
 	
 	g_key_file_set_boolean(preferences->configuration_file,
 		"editor",

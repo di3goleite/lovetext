@@ -131,6 +131,7 @@ static void main_application_activate(GApplication *application, gpointer user_d
 	gtk_window_present(window_handler->window);
 	gtk_widget_show_all(window_handler->window);
 	initialize_lua(window_handler, preferences);
+	gtk_notebook_set_tab_pos(window_handler->notebook, preferences->tabs_position);
 	gtk_widget_set_visible(window_handler->status_bar, preferences->show_status_bar);
 	gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
 	gtk_widget_set_visible(window_handler->search_and_replace_bar, FALSE);

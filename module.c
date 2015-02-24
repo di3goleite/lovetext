@@ -113,6 +113,7 @@ struct cpreferences *alloc_preferences()
 	preferences->show_tool_bar = FALSE;
 	preferences->use_custom_gtk_theme = FALSE;
 	
+	preferences->tabs_position = 2;
 	preferences->show_line_numbers = TRUE;
 	preferences->show_line_marks = TRUE;
 	preferences->show_right_margin = TRUE;
@@ -156,6 +157,10 @@ struct cpreferences *alloc_preferences()
 			preferences->show_status_bar = g_key_file_get_boolean(preferences->configuration_file,
 				"general",
 				"show_status_bar",
+				NULL);
+			preferences->tabs_position = g_key_file_get_integer(preferences->configuration_file,
+				"general",
+				"tabs_position",
 				NULL);
 			preferences->show_line_numbers = g_key_file_get_boolean(preferences->configuration_file,
 				"editor",

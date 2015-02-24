@@ -80,6 +80,7 @@ struct cpreferences
 	gboolean show_menu_bar;
 	gboolean show_status_bar;
 	gboolean show_tool_bar;
+	GtkPositionType tabs_position;
 	
 	// [editor]
 	gboolean show_line_marks;

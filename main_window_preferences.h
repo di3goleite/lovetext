@@ -54,6 +54,7 @@ struct cwindow_preferences_handler
 	GtkWidget *box;
 	GtkWidget *notebook;
 	GtkWidget *tree_view;
+	GtkWidget *combo_box_tab_pos;
 	GtkTreeModel *tree_model;
 	GtkTreeModel *tree_model_sorted;
 	
@@ -63,6 +64,8 @@ struct cwindow_preferences_handler
 	GtkWidget *treeview_schemes;
 	
 	void *window_handler;
+	
+	GtkWidget *main_window_notebook;
 	
 	update_editorf update_editor;
 	
