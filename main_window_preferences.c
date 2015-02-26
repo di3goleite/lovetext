@@ -191,10 +191,11 @@ static void window_preferences_destroy(GtkWidget *widget, gpointer user_pointer)
 	gtk_widget_hide(widget);
 }
 
-struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpreferences *preferences)
+struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capplication_handler *application_handler, struct cpreferences *preferences)
 {
 	g_printf("[MESSAGE] Creating preferences window.\n");
 	struct cwindow_preferences_handler *window_preferences_handler = malloc(sizeof(struct cwindow_preferences_handler));
+	window_preferences_handler->application_handler = application_handler;
 	window_preferences_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window_preferences_handler->window), "Love Text - Preferences");
 	gtk_widget_set_size_request(GTK_WINDOW(window_preferences_handler->window), 480, 400);
@@ -213,7 +214,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpre
 	GtkWidget *scrolled_window = NULL;
 	
 	// Create general page.
-	box_page = gtk_vbox_new(FALSE, 0);
+	box_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_container_set_border_width(box_page, 8);
 	gtk_notebook_append_page(GTK_NOTEBOOK(window_preferences_handler->notebook), box_page, gtk_label_new("General"));
 	
@@ -266,7 +267,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpre
 	gtk_widget_show_all(box_page);
 	
 	// Create editor page.
-	box_page = gtk_vbox_new(FALSE, 0);
+	box_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_container_set_border_width(box_page, 8);
 	gtk_notebook_append_page(GTK_NOTEBOOK(window_preferences_handler->notebook), box_page, gtk_label_new("Editor"));
 	
@@ -366,8 +367,30 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpre
 	gtk_widget_show_all(box_page);
 	
 	// Create plugins page.
-	box_page = gtk_vbox_new(FALSE, 8);
+	box_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_container_set_border_width(box_page, 8);
+	
+	lua_State *lua = window_preferences_handler->application_handler->lua;
+	if (lua) {
+		g_printf("[MESSAGE] Creating plugins page.\n");
+		lua_getglobal(lua, "editor");
+		if (lua_istable(lua, -1)) {
+			lua_pushstring(lua, "f_plugins_page");
+			lua_gettable(lua, -2);
+			if (lua_isfunction(lua, -1)) {
+				lua_pushlightuserdata(lua, box_page);
+				if (lua_pcall(lua, 1, 0, 0) != LUA_OK) {
+					g_printf("[ERROR] Fail to call editor[\"f_plugins_page\"].\n");
+				} else {
+					g_printf("[MESSAGE] Function editor[\"f_plugins_page\"] called.\n");
+				}
+			} else {
+				g_printf("[ERROR] Failed to get function editor[\"f_plugins_page\"].\n");
+				lua_pop(lua, 1);
+			}
+		}
+		lua_pop(lua, 1);
+	}
 	gtk_notebook_append_page(GTK_NOTEBOOK(window_preferences_handler->notebook), box_page, gtk_label_new("Plugins"));
 	gtk_widget_show_all(box_page);
 	

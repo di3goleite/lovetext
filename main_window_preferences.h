@@ -50,6 +50,8 @@ THE SOFTWARE.
 typedef (* update_editorf)(void *);
 struct cwindow_preferences_handler
 {
+	struct capplication_handler *application_handler;
+	
 	GtkWidget *window;
 	GtkWidget *box;
 	GtkWidget *notebook;
@@ -72,7 +74,7 @@ struct cwindow_preferences_handler
 	struct cpreferences *preferences;
 };
 
-struct cwindow_preferences_handler *alloc_window_preferences_handler(struct cpreferences *preferences);
+struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capplication_handler *application_handler, struct cpreferences *preferences);
 
 #endif
 

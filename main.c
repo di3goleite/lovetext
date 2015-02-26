@@ -125,8 +125,7 @@ static void main_application_activate(GApplication *application, gpointer user_d
 		g_printf("[MESSAGE] Setting no custom theme.\n");
 	}
 	
-	struct cwindow_handler *window_handler = alloc_window_handler(preferences);
-	window_handler->application_handler = application_handler;
+	struct cwindow_handler *window_handler = alloc_window_handler(application_handler, preferences);
 	gtk_application_add_window(application_handler->application, window_handler->window);
 	gtk_window_present(window_handler->window);
 	gtk_widget_show_all(window_handler->window);

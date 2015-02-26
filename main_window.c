@@ -619,7 +619,7 @@ static void menu_item_preferences_activate(GtkWidget *widget, gpointer user_data
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	
 	// Preferences window.
-	window_handler->window_preferences_handler = alloc_window_preferences_handler(window_handler->preferences);
+	window_handler->window_preferences_handler = alloc_window_preferences_handler(window_handler->application_handler, window_handler->preferences);
 	if (window_handler->window_preferences_handler) {
 		// Circular reference.
 		window_handler->window_preferences_handler->main_window_notebook = window_handler->notebook;
@@ -1391,9 +1391,9 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	gint index = gtk_notebook_append_page(GTK_NOTEBOOK(window_handler->notebook),
 		buffer_ref->scrolled_window, buffer_ref->tab);
 	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window, TRUE);
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook), index);
 	gtk_widget_show_all(buffer_ref->tab);
 	gtk_widget_show_all(buffer_ref->scrolled_window);
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook), index);
 	
 	gtk_source_buffer_begin_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
 	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
@@ -2044,10 +2044,11 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 	return menu_bar;
 }
 
-struct cwindow_handler *alloc_window_handler(struct cpreferences *preferences)
+struct cwindow_handler *alloc_window_handler(struct capplication_handler *application_handler, struct cpreferences *preferences)
 {
 	g_printf("[MESSAGE] Creating main window.\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)malloc(sizeof(struct cwindow_handler));
+	window_handler->application_handler = application_handler;
 	window_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	
 	g_signal_connect(window_handler->window, "key-press-event", G_CALLBACK(window_key_press_event), window_handler);
