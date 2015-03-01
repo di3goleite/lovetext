@@ -769,10 +769,31 @@ static void menu_item_copy_activate(GtkWidget *widget, gpointer user_data)
 			buffer_ref = g_object_get_data(widget_page, "buf_ref");
 			if (buffer_ref) {
 				if (window_handler->clipboard) {
-					gtk_text_buffer_copy_clipboard(gtk_text_view_get_buffer(buffer_ref->source_view), window_handler->clipboard);
+					GtkTextIter ins;
+					GtkTextIter bound;
+					gboolean selection = FALSE;
+					selection = gtk_text_buffer_get_selection_bounds(gtk_text_view_get_buffer(buffer_ref->source_view),
+						&ins,
+						&bound);
+					if (selection) {
+						gchar *text = gtk_text_buffer_get_text(gtk_text_view_get_buffer(buffer_ref->source_view),
+							&ins,
+							&bound,
+							FALSE);
+						gtk_clipboard_set_text(window_handler->clipboard, text, -1);
+						//gtk_text_buffer_copy_clipboard(gtk_text_view_get_buffer(buffer_ref->source_view), window_handler->clipboard);
+						g_free(text);
+					}
 				}
 			}
 		}
+	}
+}
+
+static void accel_copy(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
+{
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_copy_activate(NULL, user_data);
 	}
 }
 
@@ -792,6 +813,13 @@ static void menu_item_paste_activate(GtkWidget *widget, gpointer user_data)
 				}
 			}
 		}
+	}
+}
+
+static void accel_paste(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
+{
+	if (modifier | GDK_RELEASE_MASK) {
+		menu_item_paste_activate(NULL, user_data);
 	}
 }
 
@@ -1835,6 +1863,19 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 	
 	// Accelerators.
 	gtk_accel_group_connect(accelerator_group,
+		GDK_KEY_C,
+		GDK_CONTROL_MASK,
+		GTK_ACCEL_VISIBLE,
+		g_cclosure_new(G_CALLBACK(accel_copy), window_handler, NULL));
+	/*gtk_accel_group_connect(accelerator_group,
+		GDK_KEY_V,
+		GDK_CONTROL_MASK,
+		GTK_ACCEL_VISIBLE,
+		g_cclosure_new(G_CALLBACK(accel_paste), window_handler, NULL));
+	*/
+	
+	// Accelerators.
+	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_M,
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
@@ -1943,6 +1984,13 @@ static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
 	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_Z, GDK_CONTROL_MASK | GDK_SHIFT_MASK);
 	g_signal_connect(G_OBJECT(menu_item), "activate",
 		G_CALLBACK(menu_item_redo_activate), window_handler);
+	gtk_menu_shell_append(menu, menu_item);
+	
+	menu_item = gtk_menu_item_new_with_label("Copy");
+	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
+	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_C, GDK_CONTROL_MASK);
+	g_signal_connect(G_OBJECT(menu_item), "activate",
+		G_CALLBACK(menu_item_copy_activate), window_handler);
 	gtk_menu_shell_append(menu, menu_item);
 	
 	menu_item = gtk_menu_item_new_with_label("Paste");
