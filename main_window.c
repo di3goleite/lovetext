@@ -674,7 +674,6 @@ static void menu_item_close_activate(GtkWidget *widget, gpointer user_data)
 		if (gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook)) <= 0) {
 			gtk_window_set_title(window_handler->window, "Love Text");
 		}
-		
 	}
 }
 
@@ -1769,24 +1768,43 @@ static void window_drag_data_received(GtkWidget *widget, GdkDragContext *context
 	g_printf("\nData received (%i): %s.\n", strlen(file_name), file_name);
 	gtk_drag_finish(context, TRUE, FALSE, time);
 	
+	g_printf("[MESSAGE] Get separator.\n");
 	unsigned char *last_separator = strrchr(file_name, '/');
 	unsigned char *file_only_name = last_separator + 1;
+	g_printf("[MESSAGE] Loading file \"%s\".\n", file_only_name);
 	FILE *file = fopen(file_name, "r");
 	fseek(file, 0, SEEK_END);
-	int size = ftell(file);
+	long size = ftell(file);
 	unsigned char *text = (unsigned char *)malloc(sizeof(unsigned char) * size + 1);
 	memset(text, 0, sizeof(unsigned char) * size + 1);
 	fseek(file, 0, SEEK_SET);
 	fread(text, sizeof(unsigned char), size, file);
 	
-	struct cbuffer_ref *buffer_ref = create_page(window_handler, file_name, FALSE, text, window_handler->preferences);
+	g_printf("[MESSAGE] Updating text editor schemes.\n");
+	gint pages_count = gtk_notebook_get_n_pages(window_handler->notebook);
+	gint i = 0;
+	
+	gboolean already_open = FALSE;
+	GtkWidget *widget_page = NULL;
+	struct cbuffer_ref *buffer_ref = NULL;
+	for (i = 0; i < pages_count; i++) {
+		widget_page = gtk_notebook_get_nth_page(window_handler->notebook, i);
+		buffer_ref = g_object_get_data(widget_page, "buf_ref");
+		if (buffer_ref) {
+			if (strcmp(buffer_ref->file_name->str, file_name) == 0) {
+				already_open = TRUE;
+			}
+		}
+	}
+	
+	if (already_open == FALSE) {
+		buffer_ref = create_page(window_handler, file_name, FALSE, text, window_handler->preferences);
+		update_page_language(window_handler, buffer_ref);
+	}
 	fclose(file);
-
-	update_page_language(window_handler, buffer_ref);
 	update_styles(window_handler);
 	update_providers(window_handler);
 	//update_completion_providers(window_handler);
-	
 	window_handler->drag_and_drop = FALSE;
 }
 
