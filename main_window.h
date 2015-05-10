@@ -62,6 +62,7 @@ struct cwindow_handler
 	GtkWidget *box_client;
 	GtkWidget *notebook;
 	GtkWidget *action_widget_box;
+	GtkWidget *revealer;
 	
 	GtkWidget *label_search_replace;
 	GtkWidget *search_and_replace_bar;

@@ -977,18 +977,21 @@ static void action_toggle_fullscreen_activate(GSimpleAction *simple, GVariant *p
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	
 	if (window_handler->window_fullscreen) {
-		g_object_ref(window_handler->main_button);
-		gtk_container_remove(window_handler->action_widget_box, window_handler->main_button);
-		gtk_header_bar_pack_start(window_handler->header_bar, window_handler->main_button);
+		g_object_ref(window_handler->header_bar);
+		gtk_container_remove(window_handler->box, window_handler->header_bar);
+		
+		gtk_window_set_titlebar(window_handler->window, window_handler->header_bar);
+		gtk_widget_show_all(window_handler->header_bar);
 		gtk_window_unfullscreen(window_handler->window);
-		gtk_widget_show_all(window_handler->action_widget_box);
 		window_handler->window_fullscreen = FALSE;
 	} else {
-		g_object_ref(window_handler->main_button);
-		gtk_container_remove(window_handler->header_bar, window_handler->main_button);
-		gtk_box_pack_start(window_handler->action_widget_box, window_handler->main_button, TRUE, TRUE, 0);
+		g_object_ref(window_handler->header_bar);
+		gtk_container_remove(window_handler->window, window_handler->header_bar);
+		gtk_widget_unparent(window_handler->header_bar);
+		gtk_box_pack_start(window_handler->box, window_handler->header_bar, FALSE, TRUE, 0);
+		
 		gtk_window_fullscreen(window_handler->window);
-		gtk_widget_show_all(window_handler->action_widget_box);
+		gtk_widget_show_all(window_handler->header_bar);
 		window_handler->window_fullscreen = TRUE;
 	}
 }
@@ -2021,7 +2024,7 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	window_handler->application_handler = application_handler;
 	window_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	window_handler->box = gtk_vbox_new(FALSE, 0);
-	
+	window_handler->revealer = NULL;
 	g_signal_connect(window_handler->window, "key-press-event", G_CALLBACK(window_key_press_event), window_handler);
 	g_signal_connect(window_handler->window, "key-release-event", G_CALLBACK(window_key_release_event), window_handler);
 	
@@ -2100,8 +2103,8 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	gtk_notebook_set_action_widget(window_handler->notebook, window_handler->action_widget_box, GTK_PACK_START);
 	gtk_widget_show_all(window_handler->action_widget_box);
 	
-	gtk_box_pack_start(GTK_BOX(window_handler->box), window_handler->notebook, TRUE, TRUE, 0);
 	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->action_bar, FALSE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->notebook, TRUE, TRUE, 0);
 	
 	// Search bar.
 	GtkWidget *search_and_replace_bar = gtk_vbox_new(FALSE, 8);
