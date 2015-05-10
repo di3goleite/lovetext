@@ -977,19 +977,21 @@ static void action_toggle_fullscreen_activate(GSimpleAction *simple, GVariant *p
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	
 	if (window_handler->window_fullscreen) {
-		g_object_ref(window_handler->header_bar);
-		gtk_container_remove(window_handler->box, window_handler->header_bar);
-		
-		gtk_window_set_titlebar(window_handler->window, window_handler->header_bar);
-		gtk_widget_show_all(window_handler->header_bar);
+		if (window_handler->decorated) {
+			g_object_ref(window_handler->header_bar);
+			gtk_container_remove(window_handler->box, window_handler->header_bar);
+			gtk_window_set_titlebar(window_handler->window, window_handler->header_bar);
+			gtk_widget_show_all(window_handler->header_bar);
+		}
 		gtk_window_unfullscreen(window_handler->window);
 		window_handler->window_fullscreen = FALSE;
 	} else {
-		g_object_ref(window_handler->header_bar);
-		gtk_container_remove(window_handler->window, window_handler->header_bar);
-		gtk_widget_unparent(window_handler->header_bar);
-		gtk_box_pack_start(window_handler->box, window_handler->header_bar, FALSE, TRUE, 0);
-		
+		if (window_handler->decorated) {
+			g_object_ref(window_handler->header_bar);
+			gtk_container_remove(window_handler->window, window_handler->header_bar);
+			gtk_widget_unparent(window_handler->header_bar);
+			gtk_box_pack_start(window_handler->box, window_handler->header_bar, FALSE, TRUE, 0);
+		}
 		gtk_window_fullscreen(window_handler->window);
 		gtk_widget_show_all(window_handler->header_bar);
 		window_handler->window_fullscreen = TRUE;
@@ -2162,6 +2164,8 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	window_handler->id_factory = 0;
 	
 	window_handler->preferences = preferences;
+	
+	window_handler->decorated = window_handler->preferences->use_decoration;
 	
 	gtk_drag_dest_set(window_handler->notebook, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_COPY);
 	gtk_drag_dest_add_text_targets(window_handler->notebook);
