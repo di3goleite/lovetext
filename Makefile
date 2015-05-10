@@ -18,8 +18,8 @@ compile:
 	echo 'Linking files.'
 	$(CC) -o ./lovetext *.o $(LDLIBS)
 
-install: compile
-	install -m755 ./lovetext $(DESTDIR)$(PREFIX)/bin
+install:
+	install -m755 $(SRCDIR)/lovetext $(DESTDIR)/usr/bin/lovetext
 	make clean
 
 clean:
