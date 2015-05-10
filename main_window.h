@@ -51,6 +51,7 @@ struct cwindow_handler
 	GMenu *menu_model;
 	GtkWidget *window;
 	gboolean window_fullscreen;
+	gboolean decorated;
 	GtkAccelGroup *accel_group;
 	GtkWidget *box;
 	GtkWidget *tool_bar;
