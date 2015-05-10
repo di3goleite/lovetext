@@ -112,6 +112,12 @@ static void check_button_highlight_current_line_toggled(GtkWidget *widget, gpoin
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
+static void check_button_use_decoration_toggled(GtkWidget *widget, gpointer user_data)
+{
+	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
+	window_preferences_handler->preferences->use_decoration = gtk_toggle_button_get_active(widget);
+}
+
 static void check_button_show_menu_bar_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
@@ -126,10 +132,10 @@ static void check_button_show_tool_bar_toggled(GtkWidget *widget, gpointer user_
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
-static void check_button_show_status_bar_toggled(GtkWidget *widget, gpointer user_data)
+static void check_button_show_action_bar_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_status_bar = gtk_toggle_button_get_active(widget);
+	window_preferences_handler->preferences->show_action_bar = gtk_toggle_button_get_active(widget);
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
@@ -218,7 +224,13 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_container_set_border_width(box_page, 8);
 	gtk_notebook_append_page(GTK_NOTEBOOK(window_preferences_handler->notebook), box_page, gtk_label_new("General"));
 	
+	widget = gtk_check_button_new_with_label("Use decoration.");
+	gtk_toggle_button_set_active(widget, preferences->use_decoration);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_use_decoration_toggled), window_preferences_handler);
+	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
+	
 	widget = gtk_check_button_new_with_label("Show menu bar.");
+	gtk_widget_set_margin_top(widget, 8);
 	gtk_toggle_button_set_active(widget, preferences->show_menu_bar);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_menu_bar_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
@@ -229,10 +241,10 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_tool_bar_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
 	
-	widget = gtk_check_button_new_with_label("Show status bar.");
+	widget = gtk_check_button_new_with_label("Show action bar.");
 	gtk_widget_set_margin_top(widget, 8);
-	gtk_toggle_button_set_active(widget, preferences->show_status_bar);
-	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_status_bar_toggled), window_preferences_handler);
+	gtk_toggle_button_set_active(widget, preferences->show_action_bar);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_action_bar_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
 	
 	box_group = gtk_vbox_new(FALSE, 2);

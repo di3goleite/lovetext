@@ -77,8 +77,9 @@ struct cpreferences
 	gchar *gtk_theme;
 	gboolean use_custom_gtk_theme;
 	gboolean start_new_page;
+	gboolean use_decoration;
 	gboolean show_menu_bar;
-	gboolean show_status_bar;
+	gboolean show_action_bar;
 	gboolean show_tool_bar;
 	GtkPositionType tabs_position;
 	

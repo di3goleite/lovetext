@@ -131,13 +131,14 @@ static void main_application_activate(GApplication *application, gpointer user_d
 	gtk_widget_show_all(window_handler->window);
 	initialize_lua(window_handler, preferences);
 	gtk_notebook_set_tab_pos(window_handler->notebook, preferences->tabs_position);
-	gtk_widget_set_visible(window_handler->status_bar, preferences->show_status_bar);
-	gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
+	gtk_widget_set_visible(window_handler->action_bar, preferences->show_action_bar);
+	//gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
 	gtk_widget_set_visible(window_handler->search_and_replace_bar, FALSE);
 }
 
 static void main_application_startup(GApplication *application, gpointer user_data)
 {
+	g_printf("[MESSAGE] Program startup.\n");
 	struct capplication_handler *application_handler = (struct capplication_handler *)user_data;
 	g_application_hold(application);
 	//GNotification *notification = g_notification_new(_PROGRAM_NAME_ " starting.");

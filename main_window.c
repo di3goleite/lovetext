@@ -93,8 +93,8 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 		lua_pushlightuserdata(lua, window_handler->notebook);
 		lua_settable(lua, -3);
 		
-		lua_pushstring(lua, "status_bar");
-		lua_pushlightuserdata(lua, window_handler->status_bar);
+		lua_pushstring(lua, "action_bar");
+		lua_pushlightuserdata(lua, window_handler->action_bar);
 		lua_settable(lua, -3);
 		
 		lua_pushstring(lua, "window_box");
@@ -261,8 +261,12 @@ static void update_page_language(struct cwindow_handler *window_handler, struct 
 		g_free (content_type);
 		content_type = NULL;
 	}
-	language = gtk_source_language_manager_guess_language(window_handler->preferences->language_manager,
-		buffer_ref->file_name->str, content_type);
+	language = NULL;
+	if ((buffer_ref->file_name->str) && (content_type)) {
+		language = gtk_source_language_manager_guess_language(window_handler->preferences->language_manager,
+			buffer_ref->file_name->str, content_type);
+	}
+	
 	if (language) {
 		gtk_source_buffer_set_language(source_buffer, language);
 	}
@@ -338,11 +342,17 @@ static void update_providers(struct cwindow_handler *window_handler)
 
 static void update_editor(struct cwindow_handler *window_handler)
 {
+	struct cpreferences *preferences = window_handler->preferences;
+	if (preferences->show_action_bar) {
+		gtk_widget_show(window_handler->action_bar);
+	} else {
+		gtk_widget_hide(window_handler->action_bar);
+	}
 	update_styles(window_handler);
 }
 
 // Actions callbacks.
-static void menu_item_new_activate(GtkWidget *widget, gpointer user_data)
+static void action_new_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.new\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -354,19 +364,21 @@ static void menu_item_new_activate(GtkWidget *widget, gpointer user_data)
 static void accel_new(GtkWidget *w, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_new_activate(NULL, user_data);
+		action_new_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_open_activate(GtkWidget *widget, gpointer user_data)
+static void action_open_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.open\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	GtkWidget *file_chooser = gtk_file_chooser_dialog_new("Open",
 		window_handler->window,
 		GTK_FILE_CHOOSER_ACTION_OPEN,
-		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-		GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+		"Cancel",
+		GTK_RESPONSE_CANCEL,
+		"Open",
+		GTK_RESPONSE_ACCEPT,
 		NULL);
 	gtk_file_chooser_set_select_multiple(file_chooser, TRUE);
 	gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
@@ -413,11 +425,11 @@ static void menu_item_open_activate(GtkWidget *widget, gpointer user_data)
 static void accel_open(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_open_activate(NULL, user_data);
+		action_open_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
+static void action_save_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.save\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -462,10 +474,12 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 				lua_pop(lua, 1);
 			} else {
 				GtkWidget *file_chooser = gtk_file_chooser_dialog_new("Save",
-					NULL,
+					window_handler->window,
 					GTK_FILE_CHOOSER_ACTION_SAVE,
-					GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-					GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+					"Cancel",
+					GTK_RESPONSE_CANCEL,
+					"Save",
+					GTK_RESPONSE_ACCEPT,
 					NULL);
 				gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
 				gtk_file_chooser_set_current_folder(file_chooser, window_handler->preferences->last_path->str);
@@ -527,11 +541,11 @@ static void menu_item_save_activate(GtkWidget *widget, gpointer user_data)
 static void accel_save(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_save_activate(NULL, user_data);
+		action_save_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
+static void action_save_as_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.save_as\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -543,10 +557,12 @@ static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
 		buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
 		if (buffer_ref) {
 			GtkWidget *file_chooser = gtk_file_chooser_dialog_new("Save as",
-				NULL,
+				window_handler->window,
 				GTK_FILE_CHOOSER_ACTION_SAVE,
-				GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-				GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+				"Cancel",
+				GTK_RESPONSE_CANCEL,
+				"Save",
+				GTK_RESPONSE_ACCEPT,
 				NULL);
 			gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
 			gtk_file_chooser_set_current_folder(file_chooser, window_handler->preferences->last_path->str);
@@ -609,11 +625,11 @@ static void menu_item_save_as_activate(GtkWidget *widget, gpointer user_data)
 static void accel_save_as(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_save_as_activate(NULL, user_data);
+		action_save_as_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_preferences_activate(GtkWidget *widget, gpointer user_data)
+static void action_preferences_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.preferences\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -636,11 +652,11 @@ static void menu_item_preferences_activate(GtkWidget *widget, gpointer user_data
 static void accel_preferences(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_preferences_activate(NULL, user_data);
+		action_preferences_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_close_activate(GtkWidget *widget, gpointer user_data)
+static void action_close_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.close\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -680,11 +696,11 @@ static void menu_item_close_activate(GtkWidget *widget, gpointer user_data)
 static void accel_close(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_close_activate(NULL, user_data);
+		action_close_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_exit_activate(GtkWidget *widget, gpointer user_data)
+static void action_exit_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.exit\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -694,11 +710,11 @@ static void menu_item_exit_activate(GtkWidget *widget, gpointer user_data)
 static void accel_exit(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_exit_activate(NULL, user_data);
+		action_exit_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_undo_activate(GtkWidget *widget, gpointer user_data)
+static void action_undo_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.undo\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -723,11 +739,11 @@ static void menu_item_undo_activate(GtkWidget *widget, gpointer user_data)
 static void accel_undo(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_undo_activate(NULL, user_data);
+		action_undo_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_redo_activate(GtkWidget *widget, gpointer user_data)
+static void action_redo_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.redo\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -752,11 +768,11 @@ static void menu_item_redo_activate(GtkWidget *widget, gpointer user_data)
 static void accel_redo(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_redo_activate(NULL, user_data);
+		action_redo_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_copy_activate(GtkWidget *widget, gpointer user_data)
+static void action_copy_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.copy\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -792,11 +808,11 @@ static void menu_item_copy_activate(GtkWidget *widget, gpointer user_data)
 static void accel_copy(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_copy_activate(NULL, user_data);
+		action_copy_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_paste_activate(GtkWidget *widget, gpointer user_data)
+static void action_paste_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.paste\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -818,7 +834,7 @@ static void menu_item_paste_activate(GtkWidget *widget, gpointer user_data)
 static void accel_paste(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_paste_activate(NULL, user_data);
+		action_paste_activate(NULL, NULL, user_data);
 	}
 }
 
@@ -848,7 +864,7 @@ static void accel_cut(GtkAccelGroup *accel_group, GObject *acceleratable, guint 
 	}
 }
 
-static void menu_item_delete_activate(GtkWidget *widget, gpointer user_data)
+static void action_delete_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.delete\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -872,11 +888,11 @@ static void menu_item_delete_activate(GtkWidget *widget, gpointer user_data)
 static void accel_delete(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_delete_activate(NULL, user_data);
+		action_delete_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_next_page_activate(GtkWidget *widget, gpointer user_data)
+static void action_next_page_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.next_page\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -892,11 +908,11 @@ static void accel_next_page(GtkAccelGroup *accel_group, GObject *acceleratable, 
 {
 	if (modifier | GDK_RELEASE_MASK) {
 		g_printf("[MESSAGE] Activate \"next_page\" accelerator.\n");
-		menu_item_next_page_activate(NULL, user_data);
+		action_next_page_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_previous_page_activate(GtkWidget *widget, gpointer user_data)
+static void action_previous_page_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.previous_page\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -912,11 +928,11 @@ static void accel_previous_page(GtkAccelGroup *accel_group, GObject *acceleratab
 {
 	if (modifier | GDK_RELEASE_MASK) {
 		g_printf("[MESSAGE] Activate \"previous_page\" accelerator.\n");
-		menu_item_previous_page_activate(NULL, user_data);
+		action_previous_page_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_toggle_menu_bar_activate(GtkWidget *widget, gpointer user_data)
+static void action_toggle_menu_bar_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.toggle_menu_bar\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -931,38 +947,48 @@ static void menu_item_toggle_menu_bar_activate(GtkWidget *widget, gpointer user_
 static void accel_toggle_menu_bar(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_toggle_menu_bar_activate(NULL, user_data);
+		action_toggle_menu_bar_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_toggle_status_bar_activate(GtkWidget *widget, gpointer user_data)
+static void action_toggle_action_bar_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
-	g_printf("[MESSAGE] Performing action \"window.toggle_status_bar\".\n");
+	g_printf("[MESSAGE] Performing action \"window.toggle_action_bar\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	if (gtk_widget_get_visible(window_handler->status_bar)) {
-		gtk_widget_hide(window_handler->status_bar);
+	if (gtk_widget_get_visible(window_handler->action_bar)) {
+		gtk_widget_set_visible(window_handler->action_bar, FALSE);
+		window_handler->preferences->show_action_bar = FALSE;
 	} else {
-		gtk_widget_show(window_handler->status_bar);
+		gtk_widget_set_visible(window_handler->action_bar, TRUE);
+		window_handler->preferences->show_action_bar = TRUE;
 	}
-	window_handler->preferences->show_status_bar = gtk_widget_get_visible(window_handler->status_bar);
 }
 
-static void accel_toggle_status_bar(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
+static void accel_toggle_action_bar(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_toggle_status_bar_activate(NULL, user_data);
+		action_toggle_action_bar_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_toggle_fullscreen_activate(GtkWidget *widget, gpointer user_data)
+static void action_toggle_fullscreen_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.toggle_fullscreen\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	
 	if (window_handler->window_fullscreen) {
+		g_object_ref(window_handler->main_button);
+		gtk_container_remove(window_handler->action_widget_box, window_handler->main_button);
+		gtk_header_bar_pack_start(window_handler->header_bar, window_handler->main_button);
 		gtk_window_unfullscreen(window_handler->window);
+		gtk_widget_show_all(window_handler->action_widget_box);
 		window_handler->window_fullscreen = FALSE;
 	} else {
+		g_object_ref(window_handler->main_button);
+		gtk_container_remove(window_handler->header_bar, window_handler->main_button);
+		gtk_box_pack_start(window_handler->action_widget_box, window_handler->main_button, TRUE, TRUE, 0);
 		gtk_window_fullscreen(window_handler->window);
+		gtk_widget_show_all(window_handler->action_widget_box);
 		window_handler->window_fullscreen = TRUE;
 	}
 }
@@ -970,14 +996,15 @@ static void menu_item_toggle_fullscreen_activate(GtkWidget *widget, gpointer use
 static void accel_toggle_fullscreen(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_toggle_fullscreen_activate(NULL, user_data);
+		action_toggle_fullscreen_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_search_activate(GtkWidget *widget, gpointer user_data)
+static void action_search_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.search\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	gtk_widget_show(window_handler->action_bar);
 	gtk_widget_set_visible(window_handler->search_and_replace_bar, TRUE);
 	gtk_widget_set_visible(window_handler->replace_bar, FALSE);
 	
@@ -1010,14 +1037,15 @@ static void menu_item_search_activate(GtkWidget *widget, gpointer user_data)
 static void accel_search(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_search_activate(NULL, user_data);
+		action_search_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_replace_activate(GtkWidget *widget, gpointer user_data)
+static void action_replace_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.replace\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	gtk_widget_show(window_handler->action_bar);
 	gtk_widget_set_visible(window_handler->search_and_replace_bar, TRUE);
 	gtk_widget_set_visible(window_handler->replace_bar, TRUE);
 	
@@ -1039,11 +1067,11 @@ static void menu_item_replace_activate(GtkWidget *widget, gpointer user_data)
 static void accel_replace(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_replace_activate(NULL, user_data);
+		action_replace_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_refresh_plugins_activate(GtkWidget *widget, gpointer user_data)
+static void action_refresh_plugins_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.refresh_plugins\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -1076,11 +1104,11 @@ static void menu_item_refresh_plugins_activate(GtkWidget *widget, gpointer user_
 static void accel_refresh_plugins(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
 {
 	if (modifier | GDK_RELEASE_MASK) {
-		menu_item_refresh_plugins_activate(NULL, user_data);
+		action_refresh_plugins_activate(NULL, NULL, user_data);
 	}
 }
 
-static void menu_item_about_activate(GtkWidget *widget, gpointer user_data)
+static void action_about_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	g_printf("[MESSAGE] Performing action \"window.about\".\n");
@@ -1127,9 +1155,12 @@ THE SOFTWARE.");
 static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *event, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	
+	struct cpreferences *preferences = window_handler->preferences;
 	if (event->keyval == GDK_KEY_Escape) {
 		gtk_widget_set_visible(window_handler->search_and_replace_bar, FALSE);
+		if (preferences->show_action_bar == FALSE) {
+			gtk_widget_hide(window_handler->action_bar);
+		}
 		gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
 		if (current_page > -1) {
 			GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
@@ -1252,10 +1283,10 @@ static gboolean source_view_key_press_event(GtkWidget *widget, GdkEventKey *even
 	
 	if (event->state & GDK_CONTROL_MASK) {
 		if (event->keyval == GDK_KEY_Page_Down) {
-			menu_item_next_page_activate(NULL, user_data);
+			action_next_page_activate(NULL, NULL, user_data);
 			handled = TRUE;
 		} else if (event->keyval == GDK_KEY_Page_Up) {
-			menu_item_previous_page_activate(NULL, user_data);
+			action_previous_page_activate(NULL, NULL, user_data);
 			handled = TRUE;
 		}
 	}
@@ -1607,6 +1638,11 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 	
 	g_key_file_set_boolean(preferences->configuration_file,
 		"general",
+		"use_decoration",
+		preferences->use_decoration);
+	
+	g_key_file_set_boolean(preferences->configuration_file,
+		"general",
 		"use_custom_gtk_theme",
 		preferences->use_custom_gtk_theme);
 	
@@ -1622,8 +1658,8 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 	
 	g_key_file_set_boolean(preferences->configuration_file,
 		"general",
-		"show_status_bar",
-		preferences->show_status_bar);
+		"show_action_bar",
+		preferences->show_action_bar);
 	
 	g_key_file_set_string(preferences->configuration_file,
 		"general",
@@ -1715,36 +1751,37 @@ static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint p
 	if (scrolled_window) {
 		struct cbuffer_ref *buffer_ref = NULL;
 		buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+		if (buffer_ref) {
+			window_handler->preferences->last_path = g_string_assign(window_handler->preferences->last_path, buffer_ref->file_name->str);
 		
-		window_handler->preferences->last_path = g_string_assign(window_handler->preferences->last_path, buffer_ref->file_name->str);
-		
-		char *i = strrchr(window_handler->preferences->last_path->str, '/');
-		if (i) {
-			window_handler->preferences->last_path = g_string_set_size(window_handler->preferences->last_path, i - window_handler->preferences->last_path->str);
-		}
-		//g_printf("PATH %i TO \"%s\"\n\n\n", page_num, window_handler->preferences->last_path->str);
-		
-		if (buffer_ref->file_name->len > 0) {
-			title = g_string_append(title, " - ");
-			title = g_string_append(title, buffer_ref->file_name->str);
-		}
-		lua_getglobal(lua, "editor");
-		if (lua_istable(lua, -1)) {
-			lua_pushstring(lua, "f_page_switch");
-			lua_gettable(lua, -2);
-			if (lua_isfunction(lua, -1)) {
-				g_printf("[MESSAGE] Passing widget as Lua user-data.\n");
-				lua_pushlightuserdata(lua, (void *)buffer_ref->source_view);
-				if (lua_pcall(lua, 1, 0, 0) != LUA_OK) {
-					g_printf("[ERROR] Fail to call editor[\"f_page_switch\"].\n");
-				} else {
-					g_printf("[MESSAGE] Function editor[\"f_page_switch\"] called.\n");
-				}
-			} else {
-				lua_pop(lua, 1);
+			char *i = strrchr(window_handler->preferences->last_path->str, '/');
+			if (i) {
+				window_handler->preferences->last_path = g_string_set_size(window_handler->preferences->last_path, i - window_handler->preferences->last_path->str);
 			}
+			//g_printf("PATH %i TO \"%s\"\n\n\n", page_num, window_handler->preferences->last_path->str);
+		
+			if (buffer_ref->file_name->len > 0) {
+				title = g_string_append(title, " - ");
+				title = g_string_append(title, buffer_ref->file_name->str);
+			}
+			lua_getglobal(lua, "editor");
+			if (lua_istable(lua, -1)) {
+				lua_pushstring(lua, "f_page_switch");
+				lua_gettable(lua, -2);
+				if (lua_isfunction(lua, -1)) {
+					g_printf("[MESSAGE] Passing widget as Lua user-data.\n");
+					lua_pushlightuserdata(lua, (void *)buffer_ref->source_view);
+					if (lua_pcall(lua, 1, 0, 0) != LUA_OK) {
+						g_printf("[ERROR] Fail to call editor[\"f_page_switch\"].\n");
+					} else {
+						g_printf("[MESSAGE] Function editor[\"f_page_switch\"] called.\n");
+					}
+				} else {
+					lua_pop(lua, 1);
+				}
+			}
+			lua_pop(lua, 1);
 		}
-		lua_pop(lua, 1);
 	}
 	gtk_window_set_title(window_handler->window, title->str);
 	g_string_free(title, TRUE);
@@ -1845,269 +1882,136 @@ static gboolean window_drag_drop(GtkWidget *widget, GdkDragContext *context, gin
 	return result;
 }
 
-static GtkWidget *create_menu_bar(struct cwindow_handler *window_handler)
+static GMenu *create_model(struct cwindow_handler *window_handler)
 {
-	// Accelerator group.
+	GMenu *menu_model = g_menu_new();
+	GSimpleActionGroup *action_group = NULL;
+	
+	// Main action group.
+	action_group = g_simple_action_group_new();
+	gtk_widget_insert_action_group(window_handler->window, "main", action_group);
+	
+	GSimpleAction *action = NULL;
+	action = g_simple_action_new("new", NULL);
+	g_signal_connect(action, "activate", G_CALLBACK(action_new_activate), window_handler);
+	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+	
+	action = g_simple_action_new("open", NULL);
+	g_signal_connect(action, "activate", G_CALLBACK(action_open_activate), window_handler);
+	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+	
+	action = g_simple_action_new("save", NULL);
+	g_signal_connect(action, "activate", G_CALLBACK(action_save_activate), window_handler);
+	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+	
+	action = g_simple_action_new("save_as", NULL);
+	g_signal_connect(action, "activate", G_CALLBACK(action_save_as_activate), window_handler);
+	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+	
+	action = g_simple_action_new("about", NULL);
+	g_signal_connect(action, "activate", G_CALLBACK(action_about_activate), window_handler);
+	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+	
+	action = g_simple_action_new("preferences", NULL);
+	g_signal_connect(action, "activate", G_CALLBACK(action_preferences_activate), window_handler);
+	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+	
+	action = g_simple_action_new("exit", NULL);
+	//g_signal_connect(action, "activate", G_CALLBACK(action_exit_activate), window_handler);
+	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+	
+	// View action group.
+	action_group = g_simple_action_group_new();
+	gtk_widget_insert_action_group(window_handler->window, "view", action_group);
+	
+	action = g_simple_action_new("toggle_fullscreen", NULL);
+	g_signal_connect(action, "activate", G_CALLBACK(action_toggle_fullscreen_activate), window_handler);
+	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+	
+	action = g_simple_action_new("toggle_action_bar", NULL);
+	g_signal_connect(action, "activate", G_CALLBACK(action_toggle_action_bar_activate), window_handler);
+	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+	
+	GMenu *menu_model_sub = NULL;
+	
+	// Menu main.
+	menu_model_sub = g_menu_new();
+	g_menu_append_submenu(menu_model, "Main", menu_model_sub);
+	g_menu_append(menu_model_sub, "New", "main.new");
+	g_menu_append(menu_model_sub, "Open", "main.open");
+	g_menu_append(menu_model_sub, "Save", "main.save");
+	g_menu_append(menu_model_sub, "Save as", "main.save_as");
+	g_menu_append(menu_model_sub, "Preferences", "main.preferences");
+	g_menu_append(menu_model_sub, "About", "main.about");
+	g_menu_append(menu_model_sub, "Exit", "main.exit");
+	
+	// Menu edit.
+	menu_model_sub = g_menu_new();
+	g_menu_append_submenu(menu_model, "Edit", menu_model_sub);
+	g_menu_append(menu_model_sub, "Undo", "edit.undo");
+	g_menu_append(menu_model_sub, "Redo", "edit.redo");
+	g_menu_append(menu_model_sub, "Copy", "edit.copy");
+	g_menu_append(menu_model_sub, "Paste", "edit.paste");
+	
+	// Menu view.
+	menu_model_sub = g_menu_new();
+	g_menu_append_submenu(menu_model, "View", menu_model_sub);
+	g_menu_append(menu_model_sub, "Toggle status bar", "view.toggle_action_bar");
+	g_menu_append(menu_model_sub, "Toggle fullscreen", "view.toggle_fullscreen");
+	
+	// Accelerators.
 	GtkAccelGroup *accelerator_group = gtk_accel_group_new();
 	window_handler->accelerator_group = accelerator_group;
 	gtk_window_add_accel_group(window_handler->window, accelerator_group);
-	
-	// Accelerators.
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_N,
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_new), window_handler, NULL));
+	
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_O,
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_open), window_handler, NULL));
+	
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_S,
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_save), window_handler, NULL));
+	
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_S,
 		GDK_CONTROL_MASK | GDK_SHIFT_MASK,
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_save_as), window_handler, NULL));
+	
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_W,
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_close), window_handler, NULL));
 	
-	// Accelerators.
-	gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_C,
-		GDK_CONTROL_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_copy), window_handler, NULL));
-	/*gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_V,
-		GDK_CONTROL_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_paste), window_handler, NULL));
-	*/
-	
-	// Accelerators.
-	gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_M,
-		GDK_CONTROL_MASK,
-		GTK_ACCEL_VISIBLE,
-		g_cclosure_new(G_CALLBACK(accel_toggle_menu_bar), window_handler, NULL));
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_F11,
 		0,
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_toggle_fullscreen), window_handler, NULL));
 	
-	// Accelerators.
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_F,
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_search), window_handler, NULL));
+	
 	gtk_accel_group_connect(accelerator_group,
-		GDK_KEY_H,
+		GDK_KEY_R,
 		GDK_CONTROL_MASK,
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_replace), window_handler, NULL));
 	
-	// Menu bar.
-	GtkWidget *menu_bar = gtk_menu_bar_new();
-	GtkWidget *menu = NULL;
-	GtkWidget *menu_item = NULL;
-	GtkWidget *menu_label = NULL;
-	
-	menu = gtk_menu_new();
-	menu_item = gtk_menu_item_new_with_label("Main");
-	gtk_menu_item_set_submenu(menu_item, menu);
-	gtk_menu_shell_append(menu_bar, menu_item);
-	gtk_menu_set_accel_group(menu, accelerator_group);
-	
-	menu_item = gtk_menu_item_new_with_label("New");
-	//gtk_widget_add_accelerator(menu_item, NULL, accelerator_group, 
-	//	GDK_KEY_N, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_N, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_new_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Open");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_O, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_open_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Save");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_S, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_save_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Save As");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_S, GDK_CONTROL_MASK | GDK_SHIFT_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_save_as_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Preferences");
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_preferences_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_separator_menu_item_new();
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Close");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_W, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_close_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_separator_menu_item_new();
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Exit");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_F4, GDK_MOD1_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_exit_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	// Menu Edit.
-	menu = gtk_menu_new();
-	menu_item = gtk_menu_item_new_with_label("Edit");
-	gtk_menu_item_set_submenu(menu_item, menu);
-	gtk_menu_shell_append(menu_bar, menu_item);
-	gtk_menu_set_accel_group(menu, accelerator_group);
-	
-	menu_item = gtk_menu_item_new_with_label("Undo");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_Z, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_undo_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Redo");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_Z, GDK_CONTROL_MASK | GDK_SHIFT_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_redo_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Copy");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_C, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_copy_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Paste");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_V, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_paste_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Cut");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_X, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_cut_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Delete");
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_delete_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	// Menu View.
-	menu = gtk_menu_new();
-	menu_item = gtk_menu_item_new_with_label("View");
-	gtk_menu_item_set_submenu(menu_item, menu);
-	gtk_menu_shell_append(menu_bar, menu_item);
-	gtk_menu_set_accel_group(menu, accelerator_group);
-	
-	menu_item = gtk_menu_item_new_with_label("Next Page");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_Page_Down, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_next_page_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Previous Page");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_Page_Up, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_previous_page_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Toggle Menu Bar");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_M, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_toggle_menu_bar_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Toggle Status Bar");
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_toggle_status_bar_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	// Menu Tools.
-	menu = gtk_menu_new();
-	menu_item = gtk_menu_item_new_with_label("Tools");
-	gtk_menu_item_set_submenu(menu_item, menu);
-	gtk_menu_shell_append(menu_bar, menu_item);
-	gtk_menu_set_accel_group(menu, accelerator_group);
-	
-	menu_item = gtk_menu_item_new_with_label("Search");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_F, GDK_CONTROL_MASK);
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_search_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Search Next");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_F3, 0);
-	//g_signal_connect(G_OBJECT(menu_item), "activate",
-	//	G_CALLBACK(menu_item_search_next_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Search Previous");
-	menu_label = gtk_bin_get_child(GTK_BIN(menu_item));
-	gtk_accel_label_set_accel(GTK_ACCEL_LABEL(menu_label), GDK_KEY_F3, GDK_SHIFT_MASK);
-	//g_signal_connect(G_OBJECT(menu_item), "activate",
-	//	G_CALLBACK(menu_item_search_previous_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	menu_item = gtk_menu_item_new_with_label("Refresh Plugins");
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_refresh_plugins_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	
-	// Menu Help.
-	menu = gtk_menu_new();
-	menu_item = gtk_menu_item_new_with_label("Help");
-	gtk_menu_item_set_submenu(menu_item, menu);
-	gtk_menu_shell_append(menu_bar, menu_item);
-	gtk_menu_set_accel_group(menu, accelerator_group);
-	
-	menu_item = gtk_menu_item_new_with_label("About");
-	g_signal_connect(G_OBJECT(menu_item), "activate",
-		G_CALLBACK(menu_item_about_activate), window_handler);
-	gtk_menu_shell_append(menu, menu_item);
-	return menu_bar;
+	return menu_model;
 }
 
 struct cwindow_handler *alloc_window_handler(struct capplication_handler *application_handler, struct cpreferences *preferences)
@@ -2116,6 +2020,7 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)malloc(sizeof(struct cwindow_handler));
 	window_handler->application_handler = application_handler;
 	window_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	window_handler->box = gtk_vbox_new(FALSE, 0);
 	
 	g_signal_connect(window_handler->window, "key-press-event", G_CALLBACK(window_key_press_event), window_handler);
 	g_signal_connect(window_handler->window, "key-release-event", G_CALLBACK(window_key_release_event), window_handler);
@@ -2126,9 +2031,55 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	gtk_widget_set_size_request(GTK_WINDOW(window_handler->window), 480, 380);
 	g_signal_connect(window_handler->window, "destroy", G_CALLBACK(window_destroy), window_handler);
 	
-	GtkWidget *menu_bar = create_menu_bar(window_handler);
-	window_handler->menu_bar = menu_bar;
+	// Header bar.
+	window_handler->header_bar = gtk_header_bar_new();
+	gtk_header_bar_set_title(window_handler->header_bar, "Love Text");
+	gtk_header_bar_set_decoration_layout(window_handler->header_bar,
+		"close,maximize,minimize:menu");
+	gtk_header_bar_set_show_close_button(window_handler->header_bar, TRUE);
+	if (preferences->use_decoration) {
+		gtk_window_set_titlebar(window_handler->window, window_handler->header_bar);
+	}
 	
+	// Main button.
+	window_handler->main_button = gtk_menu_button_new();
+	gtk_header_bar_pack_start(window_handler->header_bar, window_handler->main_button);
+	GList *first_iterator = gtk_container_get_children(window_handler->main_button);
+	GtkWidget *child = first_iterator->data;
+	if (child) {
+		gtk_container_remove(window_handler->main_button, child);
+	}
+	
+	GIcon *icon = g_themed_icon_new("view-sidebar-symbolic");
+	child = gtk_image_new_from_gicon(icon, GTK_ICON_SIZE_BUTTON);
+	g_object_unref(icon);
+	gtk_container_add(window_handler->main_button, child);
+	
+	gtk_widget_set_halign(window_handler->main_button, GTK_ALIGN_FILL);
+	
+	// Main menu model.
+	GMenu *menu_model = create_model(window_handler);
+	
+	window_handler->menu_model = menu_model;
+	if (preferences->use_decoration == FALSE) {
+		gtk_application_set_menubar(application_handler->application, window_handler->menu_model);
+	}
+	
+	// Main popover.
+	window_handler->main_popover = gtk_popover_new_from_model(window_handler->main_button, menu_model);
+	gtk_popover_set_modal(window_handler->main_popover, TRUE);
+	gtk_popover_set_relative_to(window_handler->main_popover, window_handler->main_button);
+	gtk_menu_button_set_popover(window_handler->main_button, window_handler->main_popover);
+	
+	// Menu bar.
+	g_printf("[MESSAGE] Creating menu bar.\n");
+	GtkWidget *menu_bar = gtk_menu_bar_new_from_model(menu_model);
+	window_handler->menu_bar = menu_bar;
+	if (preferences->use_decoration == FALSE) {
+		gtk_box_pack_start(GTK_BOX(window_handler->box), window_handler->menu_bar, FALSE, TRUE, 0);
+	}
+	
+	// Clipboard.
 	window_handler->clipboard = NULL;
 	GdkAtom clipboard_atom = gdk_atom_intern("CLIPBOARD", TRUE);
 	if (clipboard_atom) {
@@ -2136,17 +2087,21 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	}
 	
 	window_handler->window_fullscreen = FALSE;
-	window_handler->status_bar = gtk_statusbar_new();
+	window_handler->action_bar = gtk_action_bar_new();
+	
+	// Notebook.
 	window_handler->notebook = gtk_notebook_new();
 	g_signal_connect(window_handler->notebook, "switch-page", G_CALLBACK(notebook_switch_page), window_handler);
 	
 	gtk_notebook_set_scrollable(window_handler->notebook, TRUE);
-	//gtk_notebook_set_show_border(window_handler->notebook, FALSE);
-	window_handler->box = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(window_handler->box), menu_bar, FALSE, TRUE, 0);
+	
+	// Notebook action widget.
+	window_handler->action_widget_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_notebook_set_action_widget(window_handler->notebook, window_handler->action_widget_box, GTK_PACK_START);
+	gtk_widget_show_all(window_handler->action_widget_box);
 	
 	gtk_box_pack_start(GTK_BOX(window_handler->box), window_handler->notebook, TRUE, TRUE, 0);
-	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->status_bar, FALSE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->action_bar, FALSE, TRUE, 0);
 	
 	// Search bar.
 	GtkWidget *search_and_replace_bar = gtk_vbox_new(FALSE, 8);
@@ -2197,7 +2152,7 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	
 	gtk_box_pack_start(GTK_BOX(window_handler->search_and_replace_bar), search_bar, FALSE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(window_handler->search_and_replace_bar), replace_bar, FALSE, TRUE, 0);
-	gtk_box_pack_end(GTK_BOX(window_handler->box), search_and_replace_bar, FALSE, TRUE, 0);
+	gtk_action_bar_pack_start(GTK_BOX(window_handler->action_bar), search_and_replace_bar);//, TRUE, TRUE, 0);
 	
 	gtk_container_add(GTK_CONTAINER(window_handler->window), window_handler->box);
 	
