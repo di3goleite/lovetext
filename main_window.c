@@ -1391,7 +1391,7 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 		if (separator) {
 			separator++;
 		} else {
-			separator = buffer_ref->file_name;
+			separator = buffer_ref->file_name->str;
 		}
 		GtkSourceCompletionWords *provider_words = gtk_source_completion_words_new(separator, NULL);
 		buffer_ref->provider_words = provider_words;
