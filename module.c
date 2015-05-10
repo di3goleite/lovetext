@@ -108,8 +108,9 @@ struct cpreferences *alloc_preferences()
 	gchar *scheme_id = NULL;
 	gchar *font_name = NULL;
 	preferences->start_new_page = FALSE;
+	preferences->use_decoration = FALSE;
 	preferences->show_menu_bar = TRUE;
-	preferences->show_status_bar = FALSE;
+	preferences->show_action_bar = FALSE;
 	preferences->show_tool_bar = FALSE;
 	preferences->use_custom_gtk_theme = FALSE;
 	
@@ -146,6 +147,10 @@ struct cpreferences *alloc_preferences()
 				"general",
 				"gtk_theme",
 				NULL);
+			preferences->use_decoration = g_key_file_get_boolean(preferences->configuration_file,
+				"general",
+				"use_decoration",
+				NULL);
 			preferences->show_menu_bar = g_key_file_get_boolean(preferences->configuration_file,
 				"general",
 				"show_menu_bar",
@@ -154,9 +159,9 @@ struct cpreferences *alloc_preferences()
 				"general",
 				"show_tool_bar",
 				NULL);
-			preferences->show_status_bar = g_key_file_get_boolean(preferences->configuration_file,
+			preferences->show_action_bar = g_key_file_get_boolean(preferences->configuration_file,
 				"general",
-				"show_status_bar",
+				"show_action_bar",
 				NULL);
 			preferences->tabs_position = g_key_file_get_integer(preferences->configuration_file,
 				"general",

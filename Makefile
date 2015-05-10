@@ -17,6 +17,9 @@ compile:
 	$(CC) -g $(CFLAGS) -o main.o -c main.c
 	echo 'Linking files.'
 	$(CC) -o ./lovetext *.o $(LDLIBS)
+
+install: compile
+	install -m755 ./lovetext $(DESTDIR)$(PREFIX)/bin
 	make clean
 
 clean:

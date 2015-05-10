@@ -48,15 +48,20 @@ struct cwindow_handler
 {
 	struct capplication_handler *application_handler;
 	
+	GMenu *menu_model;
 	GtkWidget *window;
 	gboolean window_fullscreen;
 	GtkAccelGroup *accel_group;
 	GtkWidget *box;
 	GtkWidget *tool_bar;
-	GtkWidget *status_bar;
+	GtkWidget *action_bar;
+	GtkWidget *header_bar;
+	GtkWidget *main_button;
+	GtkWidget *main_popover;
 	GtkWidget *menu_bar;
 	GtkWidget *box_client;
 	GtkWidget *notebook;
+	GtkWidget *action_widget_box;
 	
 	GtkWidget *label_search_replace;
 	GtkWidget *search_and_replace_bar;
