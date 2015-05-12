@@ -27,6 +27,7 @@ THE SOFTWARE.
 
 #include <stdio.h>
 #include <sys/stat.h>
+#include <string.h>
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstring.h>
@@ -36,6 +37,7 @@ THE SOFTWARE.
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <gtksourceview/gtksource.h>
 #include <gtksourceview/gtksourceview.h>
 #include <gtksourceview/gtksourcebuffer.h>
 #include <gtksourceview/gtksourcestylescheme.h>
@@ -62,7 +64,7 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 	g_printf("[MESSAGE] Initializing Lua.\n");
 	window_handler->application_handler->lua = luaL_newstate();
 	lua_State* lua = window_handler->application_handler->lua;
-	lua_Number *lua_v = lua_version(lua);
+	const lua_Number *lua_v = lua_version(lua);
 	
 	if (lua_v) {
 		g_printf("[MESSAGE] Lua version is %s.\n", LUA_VERSION);
@@ -81,6 +83,10 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 	
 	lua_getglobal(lua, "editor");
 	if (lua_istable(lua, -1)) {
+		lua_pushstring(lua, "window_handler");
+		lua_pushlightuserdata(lua, window_handler);
+		lua_settable(lua, -3);
+		
 		lua_pushstring(lua, "window");
 		lua_pushlightuserdata(lua, window_handler->window);
 		lua_settable(lua, -3);
@@ -118,6 +124,11 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 			lua_pushstring(lua, preferences->program_path->str);
 			lua_settable(lua, -3);
 		}
+		
+		lua_pushstring(lua, "create_page");
+		lua_pushcfunction(lua, lua_create_page);
+		lua_settable(lua, -3);
+		
 	}
 	lua_pop(lua, 1);
 	
@@ -188,7 +199,7 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 							}
 						}
 					}
-					g_string_free(source_full_name, NULL);
+					g_string_free(source_full_name, TRUE);
 				}
 				ent = readdir(dir);
 			}
@@ -221,10 +232,10 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 	int i = 0;
 	struct cbuffer_ref *buffer_ref = NULL;
 	GtkWidget *widget = NULL;
-	while (i < gtk_notebook_get_n_pages(window_handler->notebook)) {
-		widget = gtk_notebook_get_nth_page(window_handler->notebook, i);
+	while (i < gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook))) {
+		widget = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), i);
 		if (widget) {
-			buffer_ref = g_object_get_data(widget, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget), "buf_ref");
 			if (buffer_ref) {
 				lua_getglobal(lua, "editor");
 				if (lua_istable(lua, -1)) {
@@ -252,7 +263,7 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 
 static void update_page_language(struct cwindow_handler *window_handler, struct cbuffer_ref *buffer_ref)
 {
-	GtkSourceBuffer *source_buffer = gtk_text_view_get_buffer(buffer_ref->source_view);
+	GtkSourceBuffer *source_buffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)));
 	GtkSourceLanguage *language = NULL;
 	gboolean result_uncertain;
 	gchar *content_type;
@@ -276,17 +287,18 @@ static void update_page_language(struct cwindow_handler *window_handler, struct 
 static void update_styles(struct cwindow_handler *window_handler)
 {
 	g_printf("[MESSAGE] Updating text editor schemes.\n");
-	gint pages_count = gtk_notebook_get_n_pages(window_handler->notebook);
+	struct cpreferences *preferences = window_handler->preferences;
+	gint pages_count = gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook));
 	gint i = 0;
 	
 	GtkWidget *widget_page = NULL;
 	struct cbuffer_ref *buffer_ref = NULL;
 	for (i = 0; i < pages_count; i++) {
-		widget_page = gtk_notebook_get_nth_page(window_handler->notebook, i);
-		buffer_ref = g_object_get_data(widget_page, "buf_ref");
+		widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), i);
+		buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 		if (buffer_ref) {
 			if (window_handler->preferences->scheme) {
-				gchar *scheme_id = NULL;
+				const gchar *scheme_id = NULL;
 				
 				if (window_handler->preferences->scheme) {
 					scheme_id = gtk_source_style_scheme_get_id(window_handler->preferences->scheme);
@@ -296,17 +308,35 @@ static void update_styles(struct cwindow_handler *window_handler)
 				} else {
 					g_printf("[MESSAGE] Scheme set at page %i.\n", i);
 				}
-				GtkSourceBuffer *source_buffer = gtk_text_view_get_buffer(buffer_ref->source_view);
+				GtkSourceBuffer *source_buffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)));
 				gtk_source_buffer_set_style_scheme(source_buffer, window_handler->preferences->scheme);
-				PangoFontDescription *font_description = pango_font_description_from_string(window_handler->preferences->editor_font->str);
-				gtk_widget_override_font(buffer_ref->source_view, font_description);
-				gtk_source_view_set_show_line_marks(buffer_ref->source_view, window_handler->preferences->show_line_marks);
-				gtk_source_view_set_show_line_numbers(buffer_ref->source_view, window_handler->preferences->show_line_numbers);
-				gtk_source_view_set_show_right_margin(buffer_ref->source_view, window_handler->preferences->show_right_margin);
-				gtk_source_view_set_tab_width(buffer_ref->source_view, window_handler->preferences->tab_width);
-				gtk_source_view_set_auto_indent(buffer_ref->source_view, window_handler->preferences->auto_indent);
-				gtk_source_buffer_set_highlight_matching_brackets(source_buffer, window_handler->preferences->highlight_matching_brackets);
-				gtk_source_view_set_highlight_current_line(buffer_ref->source_view, window_handler->preferences->highlight_current_line);
+				
+				GtkStyleContext *style_context = gtk_widget_get_style_context(GTK_WIDGET(buffer_ref->source_view));
+				GtkCssProvider *css_provider = gtk_css_provider_new();
+				
+				GString *css_string = g_string_new("GtkSourceView { font: ");
+				css_string = g_string_append(css_string, preferences->editor_font->str);
+				css_string = g_string_append(css_string, ";}");
+				
+				gtk_css_provider_load_from_data(css_provider,
+					css_string->str,
+					-1,
+					NULL);
+				g_string_free(css_string, TRUE);
+				
+				gtk_style_context_add_provider(style_context,
+					GTK_STYLE_PROVIDER(css_provider),
+					GTK_STYLE_PROVIDER_PRIORITY_USER);
+				g_object_unref(G_OBJECT(css_provider));
+				gtk_widget_reset_style(GTK_WIDGET(buffer_ref->source_view));
+				
+				gtk_source_view_set_show_line_marks(GTK_SOURCE_VIEW(buffer_ref->source_view), window_handler->preferences->show_line_marks);
+				gtk_source_view_set_show_line_numbers(GTK_SOURCE_VIEW(buffer_ref->source_view), window_handler->preferences->show_line_numbers);
+				gtk_source_view_set_show_right_margin(GTK_SOURCE_VIEW(buffer_ref->source_view), window_handler->preferences->show_right_margin);
+				gtk_source_view_set_tab_width(GTK_SOURCE_VIEW(buffer_ref->source_view), window_handler->preferences->tab_width);
+				gtk_source_view_set_auto_indent(GTK_SOURCE_VIEW(buffer_ref->source_view), window_handler->preferences->auto_indent);
+				gtk_source_buffer_set_highlight_matching_brackets(GTK_SOURCE_BUFFER(source_buffer), window_handler->preferences->highlight_matching_brackets);
+				gtk_source_view_set_highlight_current_line(GTK_SOURCE_VIEW(buffer_ref->source_view), window_handler->preferences->highlight_current_line);
 			}
 		}
 	}
@@ -314,7 +344,7 @@ static void update_styles(struct cwindow_handler *window_handler)
 
 static void update_providers(struct cwindow_handler *window_handler)
 {
-	gint pages_count = gtk_notebook_get_n_pages(window_handler->notebook);
+	gint pages_count = gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook));
 	gint i = 0;
 	gint j = 0;
 	
@@ -322,19 +352,19 @@ static void update_providers(struct cwindow_handler *window_handler)
 	struct cbuffer_ref *buffer_ref_a = NULL;
 	struct cbuffer_ref *buffer_ref_b = NULL;
 	for (i = 0; i < pages_count; i++) {
-		widget_page = gtk_notebook_get_nth_page(window_handler->notebook, i);
-		buffer_ref_a = g_object_get_data(widget_page, "buf_ref");
-		GtkSourceBuffer *source_buffer_a = gtk_text_view_get_buffer(buffer_ref_a->source_view);
-		GtkSourceCompletion *completion = gtk_source_view_get_completion(buffer_ref_a->source_view);
+		widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), i);
+		buffer_ref_a = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
+		GtkSourceBuffer *source_buffer_a = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref_a->source_view)));
+		GtkSourceCompletion *completion = gtk_source_view_get_completion(GTK_SOURCE_VIEW(buffer_ref_a->source_view));
 		
 		for (j = 0; j < pages_count; j++) {
-			widget_page = gtk_notebook_get_nth_page(window_handler->notebook, j);
-			buffer_ref_b = g_object_get_data(widget_page, "buf_ref");
-			GtkSourceBuffer *source_buffer_b = gtk_text_view_get_buffer(buffer_ref_b->source_view);
+			widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), j);
+			buffer_ref_b = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
+			GtkSourceBuffer *source_buffer_b = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref_b->source_view)));
 			
 			if (completion) {
 				GtkSourceCompletionWords *provider_words = buffer_ref_b->provider_words;
-				gtk_source_completion_add_provider(completion, provider_words, NULL);
+				gtk_source_completion_add_provider(completion, GTK_SOURCE_COMPLETION_PROVIDER(provider_words), NULL);
 			}
 		}
 	}
@@ -344,11 +374,19 @@ static void update_editor(struct cwindow_handler *window_handler)
 {
 	struct cpreferences *preferences = window_handler->preferences;
 	if (preferences->show_action_bar) {
-		gtk_widget_show(window_handler->action_bar);
+		gtk_widget_show(GTK_WIDGET(window_handler->action_bar));
 	} else {
-		gtk_widget_hide(window_handler->action_bar);
+		gtk_widget_hide(GTK_WIDGET(window_handler->action_bar));
+	}
+	if (window_handler->decorated) {
+		if (preferences->show_menu_bar) {
+			gtk_widget_show(GTK_WIDGET(window_handler->action_bar));
+		} else {
+			gtk_widget_hide(GTK_WIDGET(window_handler->action_bar));
+		}
 	}
 	update_styles(window_handler);
+	update_providers(window_handler);
 }
 
 // Actions callbacks.
@@ -356,9 +394,7 @@ static void action_new_activate(GSimpleAction *simple, GVariant *parameter, gpoi
 {
 	g_printf("[MESSAGE] Performing action \"window.new\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	struct cbuffer_ref *buffer_ref = create_page(window_handler, "", FALSE, "", window_handler->preferences);
-	
-	update_styles(window_handler);
+	struct cbuffer_ref *buffer_ref = create_page(window_handler, "", "");
 }
 
 static void accel_new(GtkWidget *w, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
@@ -373,20 +409,20 @@ static void action_open_activate(GSimpleAction *simple, GVariant *parameter, gpo
 	g_printf("[MESSAGE] Performing action \"window.open\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	GtkWidget *file_chooser = gtk_file_chooser_dialog_new("Open",
-		window_handler->window,
+		GTK_WINDOW(window_handler->window),
 		GTK_FILE_CHOOSER_ACTION_OPEN,
 		"Cancel",
 		GTK_RESPONSE_CANCEL,
 		"Open",
 		GTK_RESPONSE_ACCEPT,
 		NULL);
-	gtk_file_chooser_set_select_multiple(file_chooser, TRUE);
-	gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
-	gtk_file_chooser_set_current_folder(file_chooser, window_handler->preferences->last_path->str);
+	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(file_chooser), TRUE);
+	gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(file_chooser), TRUE);
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(file_chooser), window_handler->preferences->last_path->str);
 	
 	g_printf("[MESSAGE] Running dialog window.\n");
 	if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
-		GSList *filenames = gtk_file_chooser_get_filenames(file_chooser);
+		GSList *filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(file_chooser));
 		GSList *iterator = filenames;
 		while (iterator) {
 			gchar *file_name = iterator->data;
@@ -409,12 +445,8 @@ static void action_open_activate(GSimpleAction *simple, GVariant *parameter, gpo
 				fseek(file, 0, SEEK_SET);
 				fread(text, sizeof(unsigned char), size, file);
 				
-				struct cbuffer_ref *buffer_ref = create_page(window_handler, file_name, FALSE, text, window_handler->preferences);
+				struct cbuffer_ref *buffer_ref = create_page(window_handler, file_name, text);
 				fclose(file);
-				
-				update_page_language(window_handler, buffer_ref);
-				update_styles(window_handler);
-				update_providers(window_handler);
 			}
 			iterator = g_slist_next(iterator);
 		}
@@ -438,18 +470,18 @@ static void action_save_activate(GSimpleAction *simple, GVariant *parameter, gpo
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	if (scrolled_window) {
 		struct cbuffer_ref *buffer_ref = NULL;
-		buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+		buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buf_ref");
 		if (buffer_ref) {
 			if (g_file_test(buffer_ref->file_name->str, G_FILE_TEST_IS_REGULAR)) {
 				gchar *file_name = buffer_ref->file_name->str;
 				FILE *file = fopen(file_name, "w");
 				
-				GtkSourceBuffer *source_buffer = gtk_text_view_get_buffer(buffer_ref->source_view);
+				GtkSourceBuffer *source_buffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)));
 				GtkTextIter start;
 				GtkTextIter end;
-				gtk_text_buffer_get_start_iter(source_buffer, &start);
-				gtk_text_buffer_get_end_iter(source_buffer, &end);
-				gchar *text = gtk_text_buffer_get_text(source_buffer, &start, &end, FALSE);
+				gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(source_buffer), &start);
+				gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(source_buffer), &end);
+				gchar *text = gtk_text_buffer_get_text(GTK_TEXT_BUFFER(source_buffer), &start, &end, FALSE);
 				
 				fwrite(text, sizeof(unsigned char), strlen(text), file);
 				g_free(text);
@@ -474,25 +506,25 @@ static void action_save_activate(GSimpleAction *simple, GVariant *parameter, gpo
 				lua_pop(lua, 1);
 			} else {
 				GtkWidget *file_chooser = gtk_file_chooser_dialog_new("Save",
-					window_handler->window,
+					GTK_WINDOW(window_handler->window),
 					GTK_FILE_CHOOSER_ACTION_SAVE,
 					"Cancel",
 					GTK_RESPONSE_CANCEL,
 					"Save",
 					GTK_RESPONSE_ACCEPT,
 					NULL);
-				gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
-				gtk_file_chooser_set_current_folder(file_chooser, window_handler->preferences->last_path->str);
+				gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(file_chooser), TRUE);
+				gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(file_chooser), window_handler->preferences->last_path->str);
 				if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
 					gchar *file_name = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
 					FILE *file = fopen(file_name, "w");
 					
-					GtkSourceBuffer *source_buffer = gtk_text_view_get_buffer(buffer_ref->source_view);
+					GtkSourceBuffer *source_buffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)));
 					GtkTextIter start;
 					GtkTextIter end;
-					gtk_text_buffer_get_start_iter(source_buffer, &start);
-					gtk_text_buffer_get_end_iter(source_buffer, &end);
-					gchar *text = gtk_text_buffer_get_text(source_buffer, &start, &end, FALSE);
+					gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(source_buffer), &start);
+					gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(source_buffer), &end);
+					gchar *text = gtk_text_buffer_get_text(GTK_TEXT_BUFFER(source_buffer), &start, &end, FALSE);
 					
 					fwrite(text, sizeof(unsigned char), strlen(text), file);
 					g_free(text);
@@ -523,17 +555,17 @@ static void action_save_activate(GSimpleAction *simple, GVariant *parameter, gpo
 			}
 			gchar *separator = strrchr(buffer_ref->file_name->str, '/');
 			if (separator) {
-				gtk_label_set_text(buffer_ref->label, ++separator);
+				gtk_label_set_text(GTK_LABEL(buffer_ref->label), ++separator);
 			}
 			GString *title = g_string_new("Love Text");
 			if (buffer_ref->file_name->len > 0) {
 				title = g_string_append(title, " - ");
 				title = g_string_append(title, buffer_ref->file_name->str);
 			}
-			gtk_window_set_title(window_handler->window, title->str);
+			gtk_window_set_title(GTK_WINDOW(window_handler->window), title->str);
 			g_string_free(title, TRUE);
 			gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_NORMAL, TRUE);
-			gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
+			gtk_text_buffer_set_modified(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), FALSE);
 		}
 	}
 }
@@ -554,28 +586,28 @@ static void action_save_as_activate(GSimpleAction *simple, GVariant *parameter, 
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	if (scrolled_window) {
 		struct cbuffer_ref *buffer_ref = NULL;
-		buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+		buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buf_ref");
 		if (buffer_ref) {
 			GtkWidget *file_chooser = gtk_file_chooser_dialog_new("Save as",
-				window_handler->window,
+				GTK_WINDOW(window_handler->window),
 				GTK_FILE_CHOOSER_ACTION_SAVE,
 				"Cancel",
 				GTK_RESPONSE_CANCEL,
 				"Save",
 				GTK_RESPONSE_ACCEPT,
 				NULL);
-			gtk_file_chooser_set_show_hidden(file_chooser, TRUE);
-			gtk_file_chooser_set_current_folder(file_chooser, window_handler->preferences->last_path->str);
+			gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(file_chooser), TRUE);
+			gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(file_chooser), window_handler->preferences->last_path->str);
 			if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
 				gchar *file_name = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
 				FILE *file = fopen(file_name, "w");
 				
-				GtkSourceBuffer *source_buffer = gtk_text_view_get_buffer(buffer_ref->source_view);
+				GtkSourceBuffer *source_buffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)));
 				GtkTextIter start;
 				GtkTextIter end;
-				gtk_text_buffer_get_start_iter(source_buffer, &start);
-				gtk_text_buffer_get_end_iter(source_buffer, &end);
-				gchar *text = gtk_text_buffer_get_text(source_buffer, &start, &end, FALSE);
+				gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(source_buffer), &start);
+				gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(source_buffer), &end);
+				gchar *text = gtk_text_buffer_get_text(GTK_TEXT_BUFFER(source_buffer), &start, &end, FALSE);
 				
 				fwrite(text, sizeof(unsigned char), strlen(text), file);
 				g_free(text);
@@ -607,17 +639,17 @@ static void action_save_as_activate(GSimpleAction *simple, GVariant *parameter, 
 			
 			gchar *separator = strrchr(buffer_ref->file_name->str, '/');
 			if (separator) {
-				gtk_label_set_text(buffer_ref->label, ++separator);
+				gtk_label_set_text(GTK_LABEL(buffer_ref->label), ++separator);
 			}
 			GString *title = g_string_new("Love Text");
 			if (buffer_ref->file_name->len > 0) {
 				title = g_string_append(title, " - ");
 				title = g_string_append(title, buffer_ref->file_name->str);
 			}
-			gtk_window_set_title(window_handler->window, title->str);
+			gtk_window_set_title(GTK_WINDOW(window_handler->window), title->str);
 			g_string_free(title, TRUE);
 			gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_NORMAL, TRUE);
-			gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
+			gtk_text_buffer_set_modified(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), FALSE);
 		}
 	}
 }
@@ -640,12 +672,12 @@ static void action_preferences_activate(GSimpleAction *simple, GVariant *paramet
 		// Circular reference.
 		window_handler->window_preferences_handler->main_window_notebook = window_handler->notebook;
 		window_handler->window_preferences_handler->window_handler = window_handler;
-		window_handler->window_preferences_handler->update_editor = update_editor;
+		window_handler->window_preferences_handler->update_editor = (update_editorf)update_editor;
 		
-		int index = gtk_notebook_get_tab_pos(window_handler->notebook);
-		gtk_combo_box_set_active(window_handler->window_preferences_handler->combo_box_tab_pos, index);
+		int index = gtk_notebook_get_tab_pos(GTK_NOTEBOOK(window_handler->notebook));
+		gtk_combo_box_set_active(GTK_COMBO_BOX(window_handler->window_preferences_handler->combo_box_tab_pos), index);
 		gtk_widget_show_all(window_handler->window_preferences_handler->window);
-		gtk_window_set_transient_for(window_handler->window_preferences_handler->window, window_handler->window);
+		gtk_window_set_transient_for(GTK_WINDOW(window_handler->window_preferences_handler->window), GTK_WINDOW(window_handler->window));
 	}
 }
 
@@ -665,8 +697,8 @@ static void action_close_activate(GSimpleAction *simple, GVariant *parameter, gp
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	
 	if (scrolled_window) {
-		GtkWidget *source_view = gtk_container_get_focus_child(scrolled_window);
-		struct cbuffer_ref *buffer_ref = g_object_get_data(source_view, "buf_ref");
+		GtkWidget *source_view = gtk_container_get_focus_child(GTK_CONTAINER(scrolled_window));
+		struct cbuffer_ref *buffer_ref = g_object_get_data(G_OBJECT(source_view), "buf_ref");
 		if (buffer_ref) {
 			lua_getglobal(lua, "editor");
 			if (lua_istable(lua, -1)) {
@@ -688,7 +720,7 @@ static void action_close_activate(GSimpleAction *simple, GVariant *parameter, gp
 		gtk_notebook_remove_page(GTK_NOTEBOOK(window_handler->notebook),
 			gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 		if (gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook)) <= 0) {
-			gtk_window_set_title(window_handler->window, "Love Text");
+			gtk_window_set_title(GTK_WINDOW(window_handler->window), "Love Text");
 		}
 	}
 }
@@ -718,15 +750,15 @@ static void action_undo_activate(GSimpleAction *simple, GVariant *parameter, gpo
 {
 	g_printf("[MESSAGE] Performing action \"window.undo\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+	gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 	if (current_page > -1) {
-		GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+		GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 		struct cbuffer_ref *buffer_ref = NULL;
 		if (widget_page) {
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
-				gtk_source_buffer_undo(gtk_text_view_get_buffer(buffer_ref->source_view));
-				if (gtk_source_buffer_can_undo(gtk_text_view_get_buffer(buffer_ref->source_view))) {
+				gtk_source_buffer_undo(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(GTK_TEXT_VIEW(buffer_ref->source_view)))));
+				if (gtk_source_buffer_can_undo(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view))))) {
 					gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_ACTIVE, TRUE);
 				} else {
 					gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_NORMAL, TRUE);
@@ -747,15 +779,15 @@ static void action_redo_activate(GSimpleAction *simple, GVariant *parameter, gpo
 {
 	g_printf("[MESSAGE] Performing action \"window.redo\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+	gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 	if (current_page > -1) {
-		GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+		GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 		struct cbuffer_ref *buffer_ref = NULL;
 		if (widget_page) {
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
-				gtk_source_buffer_redo(gtk_text_view_get_buffer(buffer_ref->source_view));
-				if (gtk_source_buffer_can_undo(gtk_text_view_get_buffer(buffer_ref->source_view))) {
+				gtk_source_buffer_redo(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view))));
+				if (gtk_source_buffer_can_undo(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view))))) {
 					gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_ACTIVE, TRUE);
 				} else {
 					gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_NORMAL, TRUE);
@@ -776,22 +808,22 @@ static void action_copy_activate(GSimpleAction *simple, GVariant *parameter, gpo
 {
 	g_printf("[MESSAGE] Performing action \"window.copy\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+	gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 	if (current_page > -1) {
-		GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+		GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 		struct cbuffer_ref *buffer_ref = NULL;
 		if (widget_page) {
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
 				if (window_handler->clipboard) {
 					GtkTextIter ins;
 					GtkTextIter bound;
 					gboolean selection = FALSE;
-					selection = gtk_text_buffer_get_selection_bounds(gtk_text_view_get_buffer(buffer_ref->source_view),
+					selection = gtk_text_buffer_get_selection_bounds(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 						&ins,
 						&bound);
 					if (selection) {
-						gchar *text = gtk_text_buffer_get_text(gtk_text_view_get_buffer(buffer_ref->source_view),
+						gchar *text = gtk_text_buffer_get_text(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 							&ins,
 							&bound,
 							FALSE);
@@ -816,15 +848,15 @@ static void action_paste_activate(GSimpleAction *simple, GVariant *parameter, gp
 {
 	g_printf("[MESSAGE] Performing action \"window.paste\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+	gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 	if (current_page > -1) {
-		GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+		GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 		struct cbuffer_ref *buffer_ref = NULL;
 		if (widget_page) {
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
 				if (window_handler->clipboard) {
-					gtk_text_buffer_paste_clipboard(gtk_text_view_get_buffer(buffer_ref->source_view), window_handler->clipboard, NULL, TRUE);
+					gtk_text_buffer_paste_clipboard(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), window_handler->clipboard, NULL, TRUE);
 				}
 			}
 		}
@@ -842,15 +874,15 @@ static void menu_item_cut_activate(GtkWidget *widget, gpointer user_data)
 {
 	g_printf("[MESSAGE] Performing action \"window.cut\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+	gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 	if (current_page > -1) {
-		GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+		GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 		struct cbuffer_ref *buffer_ref = NULL;
 		if (widget_page) {
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
 				if (window_handler->clipboard) {
-					gtk_text_buffer_cut_clipboard(gtk_text_view_get_buffer(buffer_ref->source_view), window_handler->clipboard, TRUE);
+					gtk_text_buffer_cut_clipboard(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), window_handler->clipboard, TRUE);
 				}
 			}
 		}
@@ -868,15 +900,15 @@ static void action_delete_activate(GSimpleAction *simple, GVariant *parameter, g
 {
 	g_printf("[MESSAGE] Performing action \"window.delete\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+	gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 	if (current_page > -1) {
-		GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+		GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 		struct cbuffer_ref *buffer_ref = NULL;
 		if (widget_page) {
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
 				if (window_handler->clipboard) {
-					if (gtk_text_buffer_delete_selection(gtk_text_view_get_buffer(buffer_ref->source_view), TRUE, TRUE)) {
+					if (gtk_text_buffer_delete_selection(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), TRUE, TRUE)) {
 						g_printf("[MESSAGE] Text deleted.\n");
 					}
 				}
@@ -896,11 +928,11 @@ static void action_next_page_activate(GSimpleAction *simple, GVariant *parameter
 {
 	g_printf("[MESSAGE] Performing action \"window.next_page\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	if (gtk_notebook_get_current_page(window_handler->notebook) == 
-	gtk_notebook_get_n_pages(window_handler->notebook) - 1) {
-		gtk_notebook_set_current_page(window_handler->notebook, 0);
+	if (gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)) == 
+	gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook)) - 1) {
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook), 0);
 	} else {
-		gtk_notebook_next_page(window_handler->notebook);
+		gtk_notebook_next_page(GTK_NOTEBOOK(window_handler->notebook));
 	}
 }
 
@@ -916,11 +948,11 @@ static void action_previous_page_activate(GSimpleAction *simple, GVariant *param
 {
 	g_printf("[MESSAGE] Performing action \"window.previous_page\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	if (gtk_notebook_get_current_page(window_handler->notebook) == 0) {
-		gtk_notebook_set_current_page(window_handler->notebook,
-			gtk_notebook_get_n_pages(window_handler->notebook) - 1);
+	if (gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)) == 0) {
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook),
+			gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook)) - 1);
 	} else {
-		gtk_notebook_prev_page(window_handler->notebook);
+		gtk_notebook_prev_page(GTK_NOTEBOOK(window_handler->notebook));
 	}
 }
 
@@ -978,21 +1010,21 @@ static void action_toggle_fullscreen_activate(GSimpleAction *simple, GVariant *p
 	
 	if (window_handler->window_fullscreen) {
 		if (window_handler->decorated) {
-			g_object_ref(window_handler->header_bar);
-			gtk_container_remove(window_handler->box, window_handler->header_bar);
-			gtk_window_set_titlebar(window_handler->window, window_handler->header_bar);
-			gtk_widget_show_all(window_handler->header_bar);
+			g_object_ref(G_OBJECT(window_handler->header_bar));
+			gtk_container_remove(GTK_CONTAINER(window_handler->box), window_handler->header_bar);
+			gtk_window_set_titlebar(GTK_WINDOW(window_handler->window), window_handler->header_bar);
+			gtk_widget_show_all(GTK_WIDGET(window_handler->header_bar));
 		}
-		gtk_window_unfullscreen(window_handler->window);
+		gtk_window_unfullscreen(GTK_WINDOW(window_handler->window));
 		window_handler->window_fullscreen = FALSE;
 	} else {
 		if (window_handler->decorated) {
-			g_object_ref(window_handler->header_bar);
-			gtk_container_remove(window_handler->window, window_handler->header_bar);
+			g_object_ref(G_OBJECT(window_handler->header_bar));
+			gtk_container_remove(GTK_CONTAINER(window_handler->window), window_handler->header_bar);
 			gtk_widget_unparent(window_handler->header_bar);
-			gtk_box_pack_start(window_handler->box, window_handler->header_bar, FALSE, TRUE, 0);
+			gtk_box_pack_start(GTK_BOX(window_handler->box), window_handler->header_bar, FALSE, TRUE, 0);
 		}
-		gtk_window_fullscreen(window_handler->window);
+		gtk_window_fullscreen(GTK_WINDOW(window_handler->window));
 		gtk_widget_show_all(window_handler->header_bar);
 		window_handler->window_fullscreen = TRUE;
 	}
@@ -1009,31 +1041,34 @@ static void action_search_activate(GSimpleAction *simple, GVariant *parameter, g
 {
 	g_printf("[MESSAGE] Performing action \"window.search\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gtk_widget_show(window_handler->action_bar);
-	gtk_widget_set_visible(window_handler->search_and_replace_bar, TRUE);
-	gtk_widget_set_visible(window_handler->replace_bar, FALSE);
+	gtk_widget_show(GTK_WIDGET(window_handler->action_bar));
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), TRUE);
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->replace_bar), FALSE);
 	
-	if (gtk_widget_get_visible(window_handler->search_and_replace_bar)) {
-		gtk_widget_grab_focus(window_handler->search_entry);
-		gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+	if (gtk_widget_get_visible(GTK_WIDGET(window_handler->search_and_replace_bar))) {
+		gtk_widget_grab_focus(GTK_WIDGET(window_handler->search_entry));
+		gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 		if (current_page > -1) {
-			GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+			GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 			struct cbuffer_ref *buffer_ref = NULL;
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
-				GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "insert");
-				gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_end, cursor);
+				GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+					"insert");
+				gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+					&buffer_ref->current_search_end,
+					cursor);
 				buffer_ref->current_search_start = buffer_ref->current_search_end;
 			}
 		}
 	} else {
-		gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+		gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 		if (current_page > -1) {
-			GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+			GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 			struct cbuffer_ref *buffer_ref = NULL;
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
-				gtk_widget_grab_focus(buffer_ref->source_view);
+				gtk_widget_grab_focus(GTK_WIDGET(buffer_ref->source_view));
 			}
 		}
 	}
@@ -1050,20 +1085,20 @@ static void action_replace_activate(GSimpleAction *simple, GVariant *parameter, 
 {
 	g_printf("[MESSAGE] Performing action \"window.replace\".\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gtk_widget_show(window_handler->action_bar);
-	gtk_widget_set_visible(window_handler->search_and_replace_bar, TRUE);
-	gtk_widget_set_visible(window_handler->replace_bar, TRUE);
+	gtk_widget_show(GTK_WIDGET(window_handler->action_bar));
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), TRUE);
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->replace_bar), TRUE);
 	
-	if (gtk_widget_get_visible(window_handler->search_and_replace_bar)) {
-		gtk_widget_grab_focus(window_handler->search_entry);
+	if (gtk_widget_get_visible(GTK_WIDGET(window_handler->search_and_replace_bar))) {
+		gtk_widget_grab_focus(GTK_WIDGET(window_handler->search_entry));
 	} else {
-		gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+		gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 		if (current_page > -1) {
-			GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+			GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 			struct cbuffer_ref *buffer_ref = NULL;
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
-				gtk_widget_grab_focus(buffer_ref->source_view);
+				gtk_widget_grab_focus(GTK_WIDGET(buffer_ref->source_view));
 			}
 		}
 	}
@@ -1119,12 +1154,12 @@ static void action_about_activate(GSimpleAction *simple, GVariant *parameter, gp
 	g_printf("[MESSAGE] Performing action \"window.about\".\n");
 	GtkWidget *window_about = gtk_about_dialog_new();
 	
-	gtk_about_dialog_set_program_name(window_about, "Love Text");
-	gtk_about_dialog_set_version(window_about, "0.8");
-	gtk_about_dialog_set_copyright(window_about, "Copyright © 2015 by Felipe Ferreira da Silva");
-	gtk_about_dialog_set_comments(window_about, "Love Text is a simple, lightweight and extensible text editor.");
-	gtk_about_dialog_set_license_type(window_about, GTK_LICENSE_MIT_X11);
-	gtk_about_dialog_set_license(window_about, "The MIT License (MIT)\n\
+	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(window_about), "Love Text");
+	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window_about), "0.8");
+	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window_about), "Copyright © 2015 by Felipe Ferreira da Silva");
+	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window_about), "Love Text is a simple, lightweight and extensible text editor.");
+	gtk_about_dialog_set_license_type(GTK_ABOUT_DIALOG(window_about), GTK_LICENSE_MIT_X11);
+	gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(window_about), "The MIT License (MIT)\n\
 \n\
 Copyright (c) 2015 Felipe Ferreira da Silva\n\
 \n\
@@ -1145,16 +1180,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\
 THE SOFTWARE.");
-	gtk_about_dialog_set_wrap_license(window_about, TRUE);
+	gtk_about_dialog_set_wrap_license(GTK_ABOUT_DIALOG(window_about), TRUE);
 	gtk_window_set_icon_name(GTK_WINDOW(window_about), "lovetext");
-	gtk_about_dialog_set_logo_icon_name(window_about, "lovetext");
+	gtk_about_dialog_set_logo_icon_name(GTK_ABOUT_DIALOG(window_about), "lovetext");
 	
-	unsigned char *authors[2] = {"Felipe Ferreira da Silva (SILVA, F. F. da) <felipefsdev@gmail.com>", NULL};
-	gtk_about_dialog_set_authors(window_about, &authors);
+	const gchar *authors[2] = {"Felipe Ferreira da Silva (SILVA, F. F. da) <felipefsdev@gmail.com>", NULL};
+	gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window_about), authors);
 	
-	gtk_window_set_transient_for(window_about, window_handler->window);
-	gtk_dialog_run(window_about);
-	gtk_widget_destroy(window_about);
+	gtk_window_set_transient_for(GTK_WINDOW(window_about), GTK_WINDOW(window_handler->window));
+	gtk_dialog_run(GTK_DIALOG(window_about));
+	gtk_widget_destroy(GTK_WIDGET(window_about));
 }
 
 static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *event, gpointer user_data)
@@ -1162,31 +1197,31 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	struct cpreferences *preferences = window_handler->preferences;
 	if (event->keyval == GDK_KEY_Escape) {
-		gtk_widget_set_visible(window_handler->search_and_replace_bar, FALSE);
+		gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);
 		if (preferences->show_action_bar == FALSE) {
-			gtk_widget_hide(window_handler->action_bar);
+			gtk_widget_hide(GTK_WIDGET(window_handler->action_bar));
 		}
-		gint current_page = gtk_notebook_get_current_page(window_handler->notebook);
+		gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 		if (current_page > -1) {
-			GtkWidget *widget_page = gtk_notebook_get_nth_page(window_handler->notebook, current_page);
+			GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
 			struct cbuffer_ref *buffer_ref = NULL;
-			buffer_ref = g_object_get_data(widget_page, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 			if (buffer_ref) {
-				gtk_widget_grab_focus(buffer_ref->source_view);
+				gtk_widget_grab_focus(GTK_WIDGET(buffer_ref->source_view));
 			}
 		}
 		return TRUE;
 	}
 	
-	gint pages_count = gtk_notebook_get_n_pages(window_handler->notebook);
+	gint pages_count = gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook));
 	gint i = 0;
 	GtkWidget *widget_page = NULL;
 	struct cbuffer_ref *buffer_ref = NULL;
 	for (i = 0; i < pages_count; i++) {
-		widget_page = gtk_notebook_get_nth_page(window_handler->notebook, i);
-		buffer_ref = g_object_get_data(widget_page, "buf_ref");
+		widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), i);
+		buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 		if (buffer_ref) {
-			gtk_source_search_settings_set_search_text(buffer_ref->search_settings, gtk_entry_get_text(widget));
+			gtk_source_search_settings_set_search_text(buffer_ref->search_settings, gtk_entry_get_text(GTK_ENTRY(widget)));
 		}
 	}
 	
@@ -1196,26 +1231,31 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 		GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 			gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 		if (scrolled_window) {
-			buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buf_ref");
 		}
 	
 		if (buffer_ref) {
-			GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "insert");
-			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_start, cursor);
-			GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "selection_bound");
-			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_end, cursor_end);
+			GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+				"insert");
+			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+				&buffer_ref->current_search_start, cursor);
+			GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+				"selection_bound");
+			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+				&buffer_ref->current_search_end,
+				cursor_end);
 			
 			gtk_source_search_context_forward(buffer_ref->search_context, &buffer_ref->current_search_end,
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
 			int l = gtk_text_iter_get_line(&buffer_ref->current_search_start);
-			gtk_text_view_scroll_to_iter(buffer_ref->source_view,
+			gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(buffer_ref->source_view),
 				&buffer_ref->current_search_start,
 				0.0,
 				TRUE,
 				0.5,
 				0.5);
-			gtk_text_buffer_select_range(gtk_text_view_get_buffer(buffer_ref->source_view),
+			gtk_text_buffer_select_range(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
 		}
@@ -1228,26 +1268,30 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 		GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 			gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 		if (scrolled_window) {
-			buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+			buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buf_ref");
 		}
 	
 		if (buffer_ref) {
-			GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "insert");
-			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_start, cursor);
-			GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "selection_bound");
-			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_end, cursor_end);
+			GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), "insert");
+			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+				&buffer_ref->current_search_start,
+				cursor);
+			GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), "selection_bound");
+			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+				&buffer_ref->current_search_end,
+				cursor_end);
 			
 			gtk_source_search_context_backward(buffer_ref->search_context, &buffer_ref->current_search_start,
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
 			int l = gtk_text_iter_get_line(&buffer_ref->current_search_start);
-			gtk_text_view_scroll_to_iter(buffer_ref->source_view,
+			gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(buffer_ref->source_view),
 				&buffer_ref->current_search_start,
 				0.0,
 				TRUE,
 				0.5,
 				0.5);
-			gtk_text_buffer_select_range(gtk_text_view_get_buffer(buffer_ref->source_view),
+			gtk_text_buffer_select_range(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
 		}
@@ -1260,15 +1304,15 @@ static gboolean entry_search_key_release_event(GtkWidget *widget,  GdkEventKey *
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	
-	gint pages_count = gtk_notebook_get_n_pages(window_handler->notebook);
+	gint pages_count = gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook));
 	gint i = 0;
 	GtkWidget *widget_page = NULL;
 	struct cbuffer_ref *buffer_ref = NULL;
 	for (i = 0; i < pages_count; i++) {
-		widget_page = gtk_notebook_get_nth_page(window_handler->notebook, i);
-		buffer_ref = g_object_get_data(widget_page, "buf_ref");
+		widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), i);
+		buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 		if (buffer_ref) {
-			gtk_source_search_settings_set_search_text(buffer_ref->search_settings, gtk_entry_get_text(widget));
+			gtk_source_search_settings_set_search_text(buffer_ref->search_settings, gtk_entry_get_text(GTK_ENTRY(widget)));
 		}
 	}
 	return FALSE;
@@ -1280,10 +1324,10 @@ static gboolean source_view_key_press_event(GtkWidget *widget, GdkEventKey *even
 	gboolean handled = FALSE;
 	
 	g_printf("[MESSAGE] Source View key press.\n");
-	struct cbuffer_ref *buffer_ref = g_object_get_data(widget, "buf_ref");
+	struct cbuffer_ref *buffer_ref = g_object_get_data(G_OBJECT(widget), "buf_ref");
 	
 	if (buffer_ref) {
-		gtk_source_search_settings_set_search_text(buffer_ref->search_settings, gtk_entry_get_text(window_handler->search_entry));
+		gtk_source_search_settings_set_search_text(buffer_ref->search_settings, gtk_entry_get_text(GTK_ENTRY(window_handler->search_entry)));
 	}
 	
 	if (event->state & GDK_CONTROL_MASK) {
@@ -1302,15 +1346,15 @@ static gboolean source_view_key_release_event(GtkWidget *widget, GdkEventKey *ev
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	g_printf("[MESSAGE] Source View key release.\n");
-	GtkSourceBuffer *buffer = gtk_text_view_get_buffer(widget);
-	struct cbuffer_ref *buffer_ref = g_object_get_data(widget, "buf_ref");
+	GtkSourceBuffer *buffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget)));
+	struct cbuffer_ref *buffer_ref = g_object_get_data(G_OBJECT(widget), "buf_ref");
 	
 	if (buffer) {
 		GtkWidget *label = buffer_ref->label;
 		if (label) {
 			if (buffer_ref->file_name) {
-				if (gtk_source_buffer_can_undo(gtk_text_view_get_buffer(buffer_ref->source_view)) &&
-				gtk_text_buffer_get_modified(gtk_text_view_get_buffer(buffer_ref->source_view))) {
+				if (gtk_source_buffer_can_undo(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)))) &&
+				gtk_text_buffer_get_modified(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)))) {
 					gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_ACTIVE, TRUE);
 				} else {
 					gtk_widget_set_state_flags(buffer_ref->label, GTK_STATE_FLAG_NORMAL, TRUE);
@@ -1336,13 +1380,13 @@ static gboolean window_key_release_event(GtkWidget *widget, GdkEventKey *event, 
 static void button_close_tab_clicked(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	struct cbuffer_ref *buffer_ref = g_object_get_data(widget, "buf_ref");
+	struct cbuffer_ref *buffer_ref = g_object_get_data(G_OBJECT(widget), "buf_ref");
 	lua_State* lua = window_handler->application_handler->lua;
 	
 	if (buffer_ref->scrolled_window) {
-		GtkWidget *source_view = gtk_container_get_focus_child(buffer_ref->scrolled_window);
+		GtkWidget *source_view = gtk_container_get_focus_child(GTK_CONTAINER(buffer_ref->scrolled_window));
 		gtk_notebook_remove_page(GTK_NOTEBOOK(window_handler->notebook),
-			gtk_notebook_page_num(window_handler->notebook, buffer_ref->scrolled_window));
+			gtk_notebook_page_num(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window));
 		//gtk_widget_destroy(source_view);
 		//gtk_widget_destroy(scrolled_window);
 		lua_getglobal(lua, "editor");
@@ -1364,28 +1408,47 @@ static void button_close_tab_clicked(GtkWidget *widget, gpointer user_data)
 	}
 }
 
-struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *file_name, gboolean modified, gchar *text, struct cpreferences *preferences)
+struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *file_name, gchar *text)
 {
 	g_printf("[MESSAGE] Creating new page.\n");
+	struct cpreferences *preferences = window_handler->preferences;
 	lua_State* lua = window_handler->application_handler->lua;
 	struct cbuffer_ref *buffer_ref = (struct cbuffer_ref *)malloc(sizeof(struct cbuffer_ref));
 	buffer_ref->file_name = g_string_new(file_name);
-	buffer_ref->modified = modified;
+	buffer_ref->modified = FALSE;
 	buffer_ref->source_view = gtk_source_view_new();
 	gtk_widget_grab_focus(buffer_ref->source_view);
-	gtk_source_view_set_show_line_marks(buffer_ref->source_view, preferences->show_line_marks);
-	gtk_source_view_set_show_line_numbers(buffer_ref->source_view, preferences->show_line_numbers);
-	gtk_source_view_set_show_right_margin(buffer_ref->source_view, preferences->show_right_margin);
-	gtk_source_view_set_tab_width(buffer_ref->source_view, preferences->tab_width);
-	gtk_source_view_set_auto_indent(buffer_ref->source_view, preferences->auto_indent);
-	gtk_source_buffer_set_highlight_matching_brackets(gtk_text_view_get_buffer(buffer_ref->source_view), preferences->highlight_matching_brackets);
-	gtk_source_view_set_highlight_current_line(buffer_ref->source_view, preferences->highlight_current_line);
+	gtk_source_view_set_show_line_marks(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_line_marks);
+	gtk_source_view_set_show_line_numbers(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_line_numbers);
+	gtk_source_view_set_show_right_margin(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_right_margin);
+	gtk_source_view_set_tab_width(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->tab_width);
+	gtk_source_view_set_auto_indent(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->auto_indent);
+	gtk_source_buffer_set_highlight_matching_brackets(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view))),
+		preferences->highlight_matching_brackets);
+	gtk_source_view_set_highlight_current_line(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->highlight_current_line);
 	
-	gtk_text_buffer_set_text(gtk_text_view_get_buffer(buffer_ref->source_view), text, -1);
-	PangoFontDescription *font_description = pango_font_description_from_string(preferences->editor_font->str);
-	gtk_widget_modify_font(buffer_ref->source_view, font_description);
+	gtk_text_buffer_set_text(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), text, -1);
 	
-	GtkSourceCompletion *completion = gtk_source_view_get_completion(buffer_ref->source_view);
+	GtkStyleContext *style_context = gtk_widget_get_style_context(buffer_ref->source_view);
+	GtkCssProvider *css_provider = gtk_css_provider_new();
+	
+	GString *css_string = g_string_new("GtkSourceView { font: ");
+	css_string = g_string_append(css_string, preferences->editor_font->str);
+	css_string = g_string_append(css_string, ";}");
+	
+	gtk_css_provider_load_from_data(css_provider,
+		css_string->str,
+		-1,
+		NULL);
+	g_string_free(css_string, TRUE);
+	
+	gtk_style_context_add_provider(style_context,
+		GTK_STYLE_PROVIDER(css_provider),
+		GTK_STYLE_PROVIDER_PRIORITY_USER);
+	g_object_unref(css_provider);
+	gtk_widget_reset_style(GTK_WIDGET(buffer_ref->source_view));
+	
+	GtkSourceCompletion *completion = gtk_source_view_get_completion(GTK_SOURCE_VIEW(buffer_ref->source_view));
 	if (completion) {
 		gchar *separator = strrchr(buffer_ref->file_name->str, '/');
 		if (separator) {
@@ -1396,76 +1459,79 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 		GtkSourceCompletionWords *provider_words = gtk_source_completion_words_new(separator, NULL);
 		buffer_ref->provider_words = provider_words;
 		g_object_set(provider_words, "interactive-delay", 0, NULL);
-		gtk_source_completion_words_register(provider_words, gtk_text_view_get_buffer(buffer_ref->source_view));
-		gtk_source_completion_add_provider(completion, provider_words, NULL);
+		gtk_source_completion_words_register(provider_words, gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)));
+		gtk_source_completion_add_provider(completion, GTK_SOURCE_COMPLETION_PROVIDER(provider_words), NULL);
 	}
 	
-	buffer_ref->search_context = gtk_source_search_context_new(gtk_text_view_get_buffer(buffer_ref->source_view), NULL);
+	buffer_ref->search_context = gtk_source_search_context_new(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view))), NULL);
 	buffer_ref->search_settings = gtk_source_search_context_get_settings(buffer_ref->search_context);
 	
 	buffer_ref->scrolled_window = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(buffer_ref->scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	GtkAdjustment *hadjustment = gtk_scrolled_window_get_hadjustment(buffer_ref->scrolled_window);
-	GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment(buffer_ref->scrolled_window);
+	GtkAdjustment *hadjustment = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(buffer_ref->scrolled_window));
+	GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(buffer_ref->scrolled_window));
 	gtk_adjustment_set_page_increment(hadjustment, 0.1);
 	gtk_adjustment_set_step_increment(hadjustment, 0.1);
 	gtk_adjustment_set_page_increment(vadjustment, 0.1);
 	gtk_adjustment_set_step_increment(vadjustment, 0.1);
-	gtk_container_add(buffer_ref->scrolled_window, buffer_ref->source_view);
+	gtk_container_add(GTK_CONTAINER(buffer_ref->scrolled_window), GTK_WIDGET(buffer_ref->source_view));
 	
 	g_signal_connect(buffer_ref->source_view, "key-press-event", G_CALLBACK(source_view_key_press_event), window_handler);
 	g_signal_connect(buffer_ref->source_view, "key-release-event", G_CALLBACK(source_view_key_release_event), window_handler);
 	
-	g_object_set_data(buffer_ref->source_view, "buf_ref", buffer_ref);
-	g_object_set_data(buffer_ref->scrolled_window, "buf_ref", buffer_ref);
+	g_object_set_data(G_OBJECT(buffer_ref->source_view), "buf_ref", buffer_ref);
+	g_object_set_data(G_OBJECT(buffer_ref->scrolled_window), "buf_ref", buffer_ref);
 	
-	gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_end);
-	gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_start);
+	gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), &buffer_ref->current_search_end);
+	gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), &buffer_ref->current_search_start);
 	
 	GtkWidget *tab = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
 	GtkWidget *label = gtk_label_new("Untitled");
 	
 	gchar *separator = strrchr(buffer_ref->file_name->str, '/');
 	if (separator) {
-		gtk_label_set_text(label, ++separator);
+		gtk_label_set_text(GTK_LABEL(label), ++separator);
 	}
 	GtkWidget *button_close = gtk_button_new_from_icon_name("gtk-close", GTK_ICON_SIZE_BUTTON);
-	g_object_set_data(button_close, "buf_ref", buffer_ref);
+	g_object_set_data(G_OBJECT(button_close), "buf_ref", buffer_ref);
 	g_signal_connect(button_close, "clicked", G_CALLBACK(button_close_tab_clicked), window_handler);
 	
-	gtk_box_pack_start(tab, label, TRUE, TRUE, 0);
-	gtk_box_pack_start(tab, button_close, FALSE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(tab), GTK_WIDGET(label), TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(tab), GTK_WIDGET(button_close), FALSE, TRUE, 0);
 	
 	buffer_ref->tab = tab;
 	buffer_ref->label = label;
 	
-	gtk_widget_set_can_focus(tab, FALSE);
-	gtk_widget_set_can_focus(label, FALSE);
-	gtk_widget_set_can_focus(button_close, FALSE);
-	gtk_button_set_focus_on_click(button_close, FALSE);
+	gtk_widget_set_can_focus(GTK_WIDGET(tab), FALSE);
+	gtk_widget_set_can_focus(GTK_WIDGET(label), FALSE);
+	gtk_widget_set_can_focus(GTK_WIDGET(button_close), FALSE);
+	gtk_button_set_focus_on_click(GTK_BUTTON(button_close), FALSE);
 	
+	/*
 	GdkRGBA rgba;
 	rgba.red = 1.0;
 	rgba.green = 0.0;
 	rgba.blue = 0.0;
 	rgba.alpha = 1.0;
-	gtk_widget_override_color(label, GTK_STATE_FLAG_ACTIVE, &rgba);
+	gtk_widget_override_color(GTK_WIDGET(label), GTK_STATE_FLAG_ACTIVE, &rgba);
+	*/
 	
 	gint index = gtk_notebook_append_page(GTK_NOTEBOOK(window_handler->notebook),
-		buffer_ref->scrolled_window, buffer_ref->tab);
-	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(window_handler->notebook), buffer_ref->scrolled_window, TRUE);
-	gtk_widget_show_all(buffer_ref->tab);
-	gtk_widget_show_all(buffer_ref->scrolled_window);
+		GTK_WIDGET(buffer_ref->scrolled_window), GTK_WIDGET(buffer_ref->tab));
+	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(window_handler->notebook), GTK_WIDGET(buffer_ref->scrolled_window), TRUE);
+	gtk_widget_show_all(GTK_WIDGET(buffer_ref->tab));
+	gtk_widget_show_all(GTK_WIDGET(buffer_ref->scrolled_window));
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(window_handler->notebook), index);
 	
-	gtk_source_buffer_begin_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
-	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
-	gtk_source_buffer_end_not_undoable_action(gtk_text_view_get_buffer(buffer_ref->source_view));
-	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(buffer_ref->source_view), FALSE);
+	gtk_source_buffer_begin_not_undoable_action(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view))));
+	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), FALSE);
+	gtk_source_buffer_end_not_undoable_action(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view))));
+	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), FALSE);
 	
 	GtkTextIter start_iter;
-	gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(buffer_ref->source_view), &start_iter);
-	gtk_text_buffer_place_cursor(gtk_text_view_get_buffer(buffer_ref->source_view),
+	gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+		&start_iter);
+	gtk_text_buffer_place_cursor(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 		&start_iter);
 	
 	gtk_widget_grab_focus(buffer_ref->source_view);
@@ -1487,10 +1553,24 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 		}
 	}
 	lua_pop(lua, 1);
+	
+	update_page_language(window_handler, buffer_ref);
+	update_styles(window_handler);
+	update_providers(window_handler);
+	
 	g_printf("[MESSAGE] New page created.\n");
 	return buffer_ref;
 }
 
+static int lua_create_page(lua_State *lua)
+{
+	struct cwindow_handler *window_handler = (void *)lua_topointer(lua, 1);
+	char *file_name = lua_tostring(lua, 2);
+	char *text = lua_tostring(lua, 3);
+	create_page(window_handler, file_name, text);
+	return 0;
+}
+    
 static void button_previous_clicked(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -1498,26 +1578,30 @@ static void button_previous_clicked(GtkWidget *widget, gpointer user_data)
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	if (scrolled_window) {
-		buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+		buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buf_ref");
 	}
 	
 	if (buffer_ref) {
-		GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "insert");
-		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_start, cursor);
-		GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "selection_bound");
-		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_end, cursor_end);
+		GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			"insert");
+		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			&buffer_ref->current_search_start, cursor);
+		GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			"selection_bound");
+		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			&buffer_ref->current_search_end, cursor_end);
 		
 		gtk_source_search_context_backward(buffer_ref->search_context, &buffer_ref->current_search_start,
 			&buffer_ref->current_search_start,
 			&buffer_ref->current_search_end);
 		int l = gtk_text_iter_get_line(&buffer_ref->current_search_start);
-		gtk_text_view_scroll_to_iter(buffer_ref->source_view,
+		gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(buffer_ref->source_view),
 			&buffer_ref->current_search_start,
 			0.0,
 			TRUE,
 			0.5,
 			0.5);
-		gtk_text_buffer_select_range(gtk_text_view_get_buffer(buffer_ref->source_view),
+		gtk_text_buffer_select_range(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 			&buffer_ref->current_search_start,
 			&buffer_ref->current_search_end);
 	}
@@ -1531,26 +1615,30 @@ static void button_next_clicked(GtkWidget *widget, gpointer user_data)
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	if (scrolled_window) {
-		buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+		buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buf_ref");
 	}
 
 	if (buffer_ref) {
-		GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "insert");
-		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_start, cursor);
-		GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "selection_bound");
-		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_end, cursor_end);
+		GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			"insert");
+		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			&buffer_ref->current_search_start, cursor);
+		GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			"selection_bound");
+		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			&buffer_ref->current_search_end, cursor_end);
 		
 		gtk_source_search_context_forward(buffer_ref->search_context, &buffer_ref->current_search_end,
 			&buffer_ref->current_search_start,
 			&buffer_ref->current_search_end);
 		int l = gtk_text_iter_get_line(&buffer_ref->current_search_start);
-		gtk_text_view_scroll_to_iter(buffer_ref->source_view,
+		gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(buffer_ref->source_view),
 			&buffer_ref->current_search_start,
 			0.0,
 			TRUE,
 			0.5,
 			0.5);
-		gtk_text_buffer_select_range(gtk_text_view_get_buffer(buffer_ref->source_view),
+		gtk_text_buffer_select_range(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 			&buffer_ref->current_search_start,
 			&buffer_ref->current_search_end);
 	}
@@ -1564,38 +1652,46 @@ static void button_replace_clicked(GtkWidget *widget, gpointer user_data)
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	if (scrolled_window) {
-		buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+		buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buf_ref");
 	}
 
 	if (buffer_ref) {
-		GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "insert");
-		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_start, cursor);
-		GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "selection_bound");
-		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_end, cursor_end);
+		GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			"insert");
+		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			&buffer_ref->current_search_start, cursor);
+		GtkTextMark *cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			"selection_bound");
+		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			&buffer_ref->current_search_end, cursor_end);
 		
 		gtk_source_search_context_replace(buffer_ref->search_context,
 			&buffer_ref->current_search_start,
 			&buffer_ref->current_search_end,
-			gtk_entry_get_text(window_handler->replace_with_entry),
+			gtk_entry_get_text(GTK_ENTRY(window_handler->replace_with_entry)),
 			-1,
 			NULL);
 		
-		cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "insert");
-		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_start, cursor);
-		cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(buffer_ref->source_view), "selection_bound");
-		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(buffer_ref->source_view), &buffer_ref->current_search_end, cursor_end);
+		cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			"insert");
+		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			&buffer_ref->current_search_start, cursor);
+		cursor_end = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			"selection_bound");
+		gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
+			&buffer_ref->current_search_end, cursor_end);
 		
 		gtk_source_search_context_forward(buffer_ref->search_context, &buffer_ref->current_search_end,
 			&buffer_ref->current_search_start,
 			&buffer_ref->current_search_end);
 		int l = gtk_text_iter_get_line(&buffer_ref->current_search_start);
-		gtk_text_view_scroll_to_iter(buffer_ref->source_view,
+		gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(buffer_ref->source_view),
 			&buffer_ref->current_search_start,
 			0.0,
 			TRUE,
 			0.5,
 			0.5);
-		gtk_text_buffer_select_range(gtk_text_view_get_buffer(buffer_ref->source_view),
+		gtk_text_buffer_select_range(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 			&buffer_ref->current_search_start,
 			&buffer_ref->current_search_end);
 	}
@@ -1608,12 +1704,12 @@ static void button_replace_all_clicked(GtkWidget *widget, gpointer user_data)
 	GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
 		gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
 	if (scrolled_window) {
-		buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+		buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buf_ref");
 	}
 	
 	if (buffer_ref) {
 		gtk_source_search_context_replace_all(buffer_ref->search_context,
-			gtk_entry_get_text(window_handler->replace_with_entry),
+			gtk_entry_get_text(GTK_ENTRY(window_handler->replace_with_entry)),
 			-1,
 			NULL);
 	}
@@ -1625,7 +1721,7 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 	struct cpreferences *preferences = window_handler->preferences;
 	g_printf("[MESSAGE] Closing main window.\n");
 	
-	gchar *scheme_id = gtk_source_style_scheme_get_id(preferences->scheme);
+	const gchar *scheme_id = gtk_source_style_scheme_get_id(preferences->scheme);
 	g_key_file_set_string(preferences->configuration_file,
 		"editor",
 		"scheme_id",
@@ -1755,7 +1851,7 @@ static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint p
 	
 	if (scrolled_window) {
 		struct cbuffer_ref *buffer_ref = NULL;
-		buffer_ref = g_object_get_data(scrolled_window, "buf_ref");
+		buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buf_ref");
 		if (buffer_ref) {
 			window_handler->preferences->last_path = g_string_assign(window_handler->preferences->last_path, buffer_ref->file_name->str);
 		
@@ -1788,14 +1884,14 @@ static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint p
 			lua_pop(lua, 1);
 		}
 	}
-	gtk_window_set_title(window_handler->window, title->str);
+	gtk_window_set_title(GTK_WINDOW(window_handler->window), title->str);
 	g_string_free(title, TRUE);
 }
 
 static void window_drag_data_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint type, guint time, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	gchar *sel_data = gtk_selection_data_get_data(selection_data);
+	const guchar *sel_data = gtk_selection_data_get_data(selection_data);
 	
 	GString* file_string = g_string_new(sel_data);
 	gchar *file_name = file_string->str;
@@ -1823,15 +1919,15 @@ static void window_drag_data_received(GtkWidget *widget, GdkDragContext *context
 	fread(text, sizeof(unsigned char), size, file);
 	
 	g_printf("[MESSAGE] Updating text editor schemes.\n");
-	gint pages_count = gtk_notebook_get_n_pages(window_handler->notebook);
+	gint pages_count = gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook));
 	gint i = 0;
 	
 	gboolean already_open = FALSE;
 	GtkWidget *widget_page = NULL;
 	struct cbuffer_ref *buffer_ref = NULL;
 	for (i = 0; i < pages_count; i++) {
-		widget_page = gtk_notebook_get_nth_page(window_handler->notebook, i);
-		buffer_ref = g_object_get_data(widget_page, "buf_ref");
+		widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), i);
+		buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buf_ref");
 		if (buffer_ref) {
 			if (strcmp(buffer_ref->file_name->str, file_name) == 0) {
 				already_open = TRUE;
@@ -1840,13 +1936,9 @@ static void window_drag_data_received(GtkWidget *widget, GdkDragContext *context
 	}
 	
 	if (already_open == FALSE) {
-		buffer_ref = create_page(window_handler, file_name, FALSE, text, window_handler->preferences);
-		update_page_language(window_handler, buffer_ref);
+		buffer_ref = create_page(window_handler, file_name, text);
 	}
 	fclose(file);
-	update_styles(window_handler);
-	update_providers(window_handler);
-	//update_completion_providers(window_handler);
 	window_handler->drag_and_drop = FALSE;
 }
 
@@ -1894,7 +1986,7 @@ static GMenu *create_model(struct cwindow_handler *window_handler)
 	
 	// Main action group.
 	action_group = g_simple_action_group_new();
-	gtk_widget_insert_action_group(window_handler->window, "main", action_group);
+	gtk_widget_insert_action_group(GTK_WIDGET(window_handler->window), "main", G_ACTION_GROUP(action_group));
 	
 	GSimpleAction *action = NULL;
 	action = g_simple_action_new("new", NULL);
@@ -1927,7 +2019,7 @@ static GMenu *create_model(struct cwindow_handler *window_handler)
 	
 	// View action group.
 	action_group = g_simple_action_group_new();
-	gtk_widget_insert_action_group(window_handler->window, "view", action_group);
+	gtk_widget_insert_action_group(GTK_WIDGET(window_handler->window), "view", G_ACTION_GROUP(action_group));
 	
 	action = g_simple_action_new("toggle_fullscreen", NULL);
 	g_signal_connect(action, "activate", G_CALLBACK(action_toggle_fullscreen_activate), window_handler);
@@ -1941,7 +2033,7 @@ static GMenu *create_model(struct cwindow_handler *window_handler)
 	
 	// Menu main.
 	menu_model_sub = g_menu_new();
-	g_menu_append_submenu(menu_model, "Main", menu_model_sub);
+	g_menu_append_submenu(G_MENU(menu_model), "Main", G_MENU_MODEL(menu_model_sub));
 	g_menu_append(menu_model_sub, "New", "main.new");
 	g_menu_append(menu_model_sub, "Open", "main.open");
 	g_menu_append(menu_model_sub, "Save", "main.save");
@@ -1952,7 +2044,7 @@ static GMenu *create_model(struct cwindow_handler *window_handler)
 	
 	// Menu edit.
 	menu_model_sub = g_menu_new();
-	g_menu_append_submenu(menu_model, "Edit", menu_model_sub);
+	g_menu_append_submenu(G_MENU(menu_model), "Edit", G_MENU_MODEL(menu_model_sub));
 	g_menu_append(menu_model_sub, "Undo", "edit.undo");
 	g_menu_append(menu_model_sub, "Redo", "edit.redo");
 	g_menu_append(menu_model_sub, "Copy", "edit.copy");
@@ -1960,14 +2052,14 @@ static GMenu *create_model(struct cwindow_handler *window_handler)
 	
 	// Menu view.
 	menu_model_sub = g_menu_new();
-	g_menu_append_submenu(menu_model, "View", menu_model_sub);
+	g_menu_append_submenu(G_MENU(menu_model), "View", G_MENU_MODEL(menu_model_sub));
 	g_menu_append(menu_model_sub, "Toggle status bar", "view.toggle_action_bar");
 	g_menu_append(menu_model_sub, "Toggle fullscreen", "view.toggle_fullscreen");
 	
 	// Accelerators.
 	GtkAccelGroup *accelerator_group = gtk_accel_group_new();
 	window_handler->accelerator_group = accelerator_group;
-	gtk_window_add_accel_group(window_handler->window, accelerator_group);
+	gtk_window_add_accel_group(GTK_WINDOW(window_handler->window), accelerator_group);
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_N,
 		GDK_CONTROL_MASK,
@@ -2025,7 +2117,7 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)malloc(sizeof(struct cwindow_handler));
 	window_handler->application_handler = application_handler;
 	window_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	window_handler->box = gtk_vbox_new(FALSE, 0);
+	window_handler->box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	window_handler->revealer = NULL;
 	g_signal_connect(window_handler->window, "key-press-event", G_CALLBACK(window_key_press_event), window_handler);
 	g_signal_connect(window_handler->window, "key-release-event", G_CALLBACK(window_key_release_event), window_handler);
@@ -2033,52 +2125,52 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	window_handler->drag_and_drop = FALSE;
 	gtk_window_set_icon_name(GTK_WINDOW(window_handler->window), "lovetext");
 	gtk_window_set_title(GTK_WINDOW(window_handler->window), "Love Text");
-	gtk_widget_set_size_request(GTK_WINDOW(window_handler->window), 480, 380);
+	gtk_widget_set_size_request(GTK_WIDGET(window_handler->window), 480, 380);
 	g_signal_connect(window_handler->window, "destroy", G_CALLBACK(window_destroy), window_handler);
 	
 	// Header bar.
 	window_handler->header_bar = gtk_header_bar_new();
-	gtk_header_bar_set_title(window_handler->header_bar, "Love Text");
-	gtk_header_bar_set_decoration_layout(window_handler->header_bar,
+	gtk_header_bar_set_title(GTK_HEADER_BAR(window_handler->header_bar), "Love Text");
+	gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(window_handler->header_bar),
 		"close,maximize,minimize:menu");
-	gtk_header_bar_set_show_close_button(window_handler->header_bar, TRUE);
+	gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(window_handler->header_bar), TRUE);
 	if (preferences->use_decoration) {
-		gtk_window_set_titlebar(window_handler->window, window_handler->header_bar);
+		gtk_window_set_titlebar(GTK_WINDOW(window_handler->window), GTK_WIDGET(window_handler->header_bar));
 	}
 	
 	// Main button.
 	window_handler->main_button = gtk_menu_button_new();
-	gtk_header_bar_pack_start(window_handler->header_bar, window_handler->main_button);
-	GList *first_iterator = gtk_container_get_children(window_handler->main_button);
+	gtk_header_bar_pack_start(GTK_HEADER_BAR(window_handler->header_bar), GTK_WIDGET(window_handler->main_button));
+	GList *first_iterator = gtk_container_get_children(GTK_CONTAINER(window_handler->main_button));
 	GtkWidget *child = first_iterator->data;
 	if (child) {
-		gtk_container_remove(window_handler->main_button, child);
+		gtk_container_remove(GTK_CONTAINER(window_handler->main_button), child);
 	}
 	
 	GIcon *icon = g_themed_icon_new("view-sidebar-symbolic");
 	child = gtk_image_new_from_gicon(icon, GTK_ICON_SIZE_BUTTON);
 	g_object_unref(icon);
-	gtk_container_add(window_handler->main_button, child);
+	gtk_container_add(GTK_CONTAINER(window_handler->main_button), GTK_WIDGET(child));
 	
-	gtk_widget_set_halign(window_handler->main_button, GTK_ALIGN_FILL);
+	gtk_widget_set_halign(GTK_WIDGET(window_handler->main_button), GTK_ALIGN_FILL);
 	
 	// Main menu model.
 	GMenu *menu_model = create_model(window_handler);
 	
 	window_handler->menu_model = menu_model;
 	if (preferences->use_decoration == FALSE) {
-		gtk_application_set_menubar(application_handler->application, window_handler->menu_model);
+		gtk_application_set_menubar(GTK_APPLICATION(application_handler->application), G_MENU_MODEL(window_handler->menu_model));
 	}
 	
 	// Main popover.
-	window_handler->main_popover = gtk_popover_new_from_model(window_handler->main_button, menu_model);
-	gtk_popover_set_modal(window_handler->main_popover, TRUE);
-	gtk_popover_set_relative_to(window_handler->main_popover, window_handler->main_button);
-	gtk_menu_button_set_popover(window_handler->main_button, window_handler->main_popover);
+	window_handler->main_popover = gtk_popover_new_from_model(GTK_WIDGET(window_handler->main_button), G_MENU_MODEL(menu_model));
+	gtk_popover_set_modal(GTK_POPOVER(window_handler->main_popover), TRUE);
+	gtk_popover_set_relative_to(GTK_POPOVER(window_handler->main_popover), GTK_WIDGET(window_handler->main_button));
+	gtk_menu_button_set_popover(GTK_MENU_BUTTON(window_handler->main_button), window_handler->main_popover);
 	
 	// Menu bar.
 	g_printf("[MESSAGE] Creating menu bar.\n");
-	GtkWidget *menu_bar = gtk_menu_bar_new_from_model(menu_model);
+	GtkWidget *menu_bar = gtk_menu_bar_new_from_model(G_MENU_MODEL(menu_model));
 	window_handler->menu_bar = menu_bar;
 	if (preferences->use_decoration == FALSE) {
 		gtk_box_pack_start(GTK_BOX(window_handler->box), window_handler->menu_bar, FALSE, TRUE, 0);
@@ -2098,66 +2190,66 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	window_handler->notebook = gtk_notebook_new();
 	g_signal_connect(window_handler->notebook, "switch-page", G_CALLBACK(notebook_switch_page), window_handler);
 	
-	gtk_notebook_set_scrollable(window_handler->notebook, TRUE);
+	gtk_notebook_set_scrollable(GTK_NOTEBOOK(window_handler->notebook), TRUE);
 	
 	// Notebook action widget.
 	window_handler->action_widget_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_notebook_set_action_widget(window_handler->notebook, window_handler->action_widget_box, GTK_PACK_START);
-	gtk_widget_show_all(window_handler->action_widget_box);
+	gtk_notebook_set_action_widget(GTK_NOTEBOOK(window_handler->notebook), GTK_WIDGET(window_handler->action_widget_box), GTK_PACK_START);
+	gtk_widget_show_all(GTK_WIDGET(window_handler->action_widget_box));
 	
 	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->action_bar, FALSE, TRUE, 0);
 	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->notebook, TRUE, TRUE, 0);
 	
 	// Search bar.
-	GtkWidget *search_and_replace_bar = gtk_vbox_new(FALSE, 8);
+	GtkWidget *search_and_replace_bar = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
 	window_handler->search_and_replace_bar = search_and_replace_bar;
 	
-	GtkWidget *search_bar = gtk_hbox_new(FALSE, 8);
+	GtkWidget *search_bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	window_handler->search_bar = search_bar;
 	window_handler->search_entry = gtk_entry_new();
 	g_signal_connect(window_handler->search_entry, "key-press-event", G_CALLBACK(entry_search_key_press_event), window_handler);
 	g_signal_connect(window_handler->search_entry, "key-release-event", G_CALLBACK(entry_search_key_release_event), window_handler);
 	
 	GtkWidget *label = gtk_label_new("Search:");
-	gtk_widget_set_halign(label, GTK_ALIGN_START);
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_START);
 	
 	gtk_box_pack_start(GTK_BOX(search_bar), label, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(search_bar), window_handler->search_entry, TRUE, TRUE, 0);
 	
 	GtkWidget *button = gtk_button_new_with_label("Previous");
-	gtk_widget_set_size_request(button, 96, -1);
-	g_signal_connect(button, "clicked", G_CALLBACK(button_previous_clicked), window_handler);
+	gtk_widget_set_size_request(GTK_WIDGET(button), 96, -1);
+	g_signal_connect(GTK_WIDGET(button), "clicked", G_CALLBACK(button_previous_clicked), window_handler);
 	gtk_box_pack_start(GTK_BOX(search_bar), button, FALSE, FALSE, 0);
 	button = gtk_button_new_with_label("Next");
-	gtk_widget_set_size_request(button, 96, -1);
+	gtk_widget_set_size_request(GTK_WIDGET(button), 96, -1);
 	g_signal_connect(button, "clicked", G_CALLBACK(button_next_clicked), window_handler);
 	gtk_box_pack_start(GTK_BOX(search_bar), button, FALSE, FALSE, 0);
 	
 	// Replace bar
-	GtkWidget *replace_bar = gtk_hbox_new(FALSE, 8);
+	GtkWidget *replace_bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	window_handler->replace_bar = replace_bar;
 	window_handler->replace_with_entry = gtk_entry_new();
 	//g_signal_connect(window_handler->search_entry, "key-press-event", G_CALLBACK(entry_search_key_press_event), window_handler);
 	//g_signal_connect(window_handler->search_entry, "key-release-event", G_CALLBACK(entry_search_key_release_event), window_handler);
 	
 	label = gtk_label_new("Replace for:");
-	gtk_widget_set_halign(label, GTK_ALIGN_START);
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_START);
 	
-	gtk_box_pack_start(GTK_BOX(replace_bar), label, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(replace_bar), window_handler->replace_with_entry, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(replace_bar), GTK_WIDGET(label), FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(replace_bar), GTK_WIDGET(window_handler->replace_with_entry), TRUE, TRUE, 0);
 	
 	button = gtk_button_new_with_label("Replace");
-	gtk_widget_set_size_request(button, 96, -1);
+	gtk_widget_set_size_request(GTK_WIDGET(button), 96, -1);
 	g_signal_connect(button, "clicked", G_CALLBACK(button_replace_clicked), window_handler);
-	gtk_box_pack_start(GTK_BOX(replace_bar), button, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(replace_bar), GTK_WIDGET(button), FALSE, FALSE, 0);
 	button = gtk_button_new_with_label("Replace All");
-	gtk_widget_set_size_request(button, 96, -1);
+	gtk_widget_set_size_request(GTK_WIDGET(button), 96, -1);
 	g_signal_connect(button, "clicked", G_CALLBACK(button_replace_all_clicked), window_handler);
-	gtk_box_pack_start(GTK_BOX(replace_bar), button, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(replace_bar), GTK_WIDGET(button), FALSE, FALSE, 0);
 	
-	gtk_box_pack_start(GTK_BOX(window_handler->search_and_replace_bar), search_bar, FALSE, TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(window_handler->search_and_replace_bar), replace_bar, FALSE, TRUE, 0);
-	gtk_action_bar_pack_start(GTK_BOX(window_handler->action_bar), search_and_replace_bar);//, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(window_handler->search_and_replace_bar), GTK_WIDGET(search_bar), FALSE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(window_handler->search_and_replace_bar), GTK_WIDGET(replace_bar), FALSE, TRUE, 0);
+	gtk_action_bar_pack_start(GTK_ACTION_BAR(window_handler->action_bar), search_and_replace_bar);//, TRUE, TRUE, 0);
 	
 	gtk_container_add(GTK_CONTAINER(window_handler->window), window_handler->box);
 	

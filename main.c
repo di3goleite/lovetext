@@ -52,7 +52,7 @@ static gint main_application_command_line_handler(gpointer user_data)
 {
 	struct capplication_handler *application_handler = (struct capplication_handler *)user_data;
 	GApplicationCommandLine *command_line = application_handler->command_line;
-	GApplication *application = application_handler->application;
+	GtkApplication *application = application_handler->application;
 	GOptionContext *option_context = application_handler->option_context;
 	GError *error;
 	gint i;
@@ -120,20 +120,23 @@ static void main_application_activate(GApplication *application, gpointer user_d
 	
 	if ((preferences->use_custom_gtk_theme) && (preferences->gtk_theme)) {
 		g_printf("[MESSAGE] Setting custom theme.\n");
-		g_object_set(settings, "gtk-theme-name", preferences->gtk_theme, NULL);
+		g_object_set(G_OBJECT(settings), "gtk-theme-name", preferences->gtk_theme, NULL);
 	} else {
 		g_printf("[MESSAGE] Setting no custom theme.\n");
 	}
 	
 	struct cwindow_handler *window_handler = alloc_window_handler(application_handler, preferences);
-	gtk_application_add_window(application_handler->application, window_handler->window);
-	gtk_window_present(window_handler->window);
-	gtk_widget_show_all(window_handler->window);
+	if (gtk_application_prefers_app_menu(GTK_APPLICATION(application_handler->application))) {
+		gtk_application_set_app_menu(GTK_APPLICATION(application_handler->application), G_MENU_MODEL(window_handler->menu_model));
+	}
+	gtk_application_add_window(GTK_APPLICATION(application_handler->application), GTK_WINDOW(window_handler->window));
+	gtk_window_present(GTK_WINDOW(window_handler->window));
+	gtk_widget_show_all(GTK_WIDGET(window_handler->window));
 	initialize_lua(window_handler, preferences);
-	gtk_notebook_set_tab_pos(window_handler->notebook, preferences->tabs_position);
-	gtk_widget_set_visible(window_handler->action_bar, preferences->show_action_bar);
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(window_handler->notebook), preferences->tabs_position);
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->action_bar), preferences->show_action_bar);
 	//gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
-	gtk_widget_set_visible(window_handler->search_and_replace_bar, FALSE);
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);
 }
 
 static void main_application_startup(GApplication *application, gpointer user_data)
@@ -188,7 +191,7 @@ int main(int argc, char *args[])
 	g_signal_connect(application, "handle-local-options", G_CALLBACK(main_application_handle_local_options), application_handler);
 	
 	//gtk_main();
-	g_application_run(application, argc, args);
+	g_application_run(G_APPLICATION(application), argc, args);
 	g_printf("[MESSAGE] Terminating application.\n");
 	g_object_unref(application);
 	g_printf("[MESSAGE] Closing Lua state.\n");

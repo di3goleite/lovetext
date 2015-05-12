@@ -30,6 +30,7 @@ THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <gtk/gtk.h>
+#include <gtksourceview/gtksource.h>
 #include <gtksourceview/gtksourceview.h>
 #include <gtksourceview/gtksourcebuffer.h>
 #include <gtksourceview/gtksourcestylescheme.h>
@@ -44,8 +45,6 @@ THE SOFTWARE.
 #include <glib/gstring.h>
 #include <glib/glist.h>
 
-typedef void (* draw_layerf)(GtkWidget *widget, GtkTextViewLayer layer, cairo_t *cr);
-
 struct cbuffer_ref
 {
 	GString *file_name;
@@ -53,8 +52,6 @@ struct cbuffer_ref
 	GtkWidget *source_view;
 	GtkWidget *tab;
 	GtkWidget *label;
-	
-	draw_layerf previous_draw_layer;
 	
 	GtkSourceSearchContext *search_context;
 	GtkSourceSearchSettings *search_settings;
@@ -96,7 +93,8 @@ struct cpreferences
 	GtkSourceStyleSchemeManager *style_scheme_manager;
 	GtkSourceLanguageManager *language_manager;
 	const gchar * const *scheme_ids;
-	PangoFontDescription *font_desc;
+	
+	GtkStyleProvider *provider;
 	GString *editor_font;
 };
 
