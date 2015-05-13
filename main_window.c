@@ -1507,14 +1507,24 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *f
 	gtk_widget_set_can_focus(GTK_WIDGET(button_close), FALSE);
 	gtk_button_set_focus_on_click(GTK_BUTTON(button_close), FALSE);
 	
-	/*
-	GdkRGBA rgba;
-	rgba.red = 1.0;
-	rgba.green = 0.0;
-	rgba.blue = 0.0;
-	rgba.alpha = 1.0;
-	gtk_widget_override_color(GTK_WIDGET(label), GTK_STATE_FLAG_ACTIVE, &rgba);
-	*/
+	style_context = gtk_widget_get_style_context(buffer_ref->label);
+	css_provider = gtk_css_provider_new();
+	
+	css_string = g_string_new("GtkLabel:active { color: ");
+	css_string = g_string_append(css_string, "red");
+	css_string = g_string_append(css_string, ";}");
+	
+	gtk_css_provider_load_from_data(css_provider,
+		css_string->str,
+		-1,
+		NULL);
+	g_string_free(css_string, TRUE);
+	
+	gtk_style_context_add_provider(style_context,
+		GTK_STYLE_PROVIDER(css_provider),
+		GTK_STYLE_PROVIDER_PRIORITY_USER);
+	g_object_unref(css_provider);
+	gtk_widget_reset_style(GTK_WIDGET(buffer_ref->label));
 	
 	gint index = gtk_notebook_append_page(GTK_NOTEBOOK(window_handler->notebook),
 		GTK_WIDGET(buffer_ref->scrolled_window), GTK_WIDGET(buffer_ref->tab));
