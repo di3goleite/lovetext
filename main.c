@@ -52,7 +52,6 @@ static gint main_application_command_line_handler(gpointer user_data)
 {
 	struct capplication_handler *application_handler = (struct capplication_handler *)user_data;
 	GApplicationCommandLine *command_line = application_handler->command_line;
-	GtkApplication *application = application_handler->application;
 	GOptionContext *option_context = application_handler->option_context;
 	GError *error;
 	gint i;

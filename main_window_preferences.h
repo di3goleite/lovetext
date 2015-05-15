@@ -28,6 +28,11 @@ THE SOFTWARE.
 #ifndef _MAIN_WINDOW_PREFERENCES_H_
 #define _MAIN_WINDOW_PREFERENCES_H_
 #include <stdio.h>
+#include <sys/stat.h>
+#include <glib.h>
+#include <glib/gstring.h>
+#include <glib/glist.h>
+#include <glib/gprintf.h>
 #include <gtk/gtk.h>
 #include <gtksourceview/gtksourceview.h>
 #include <gtksourceview/gtksourcebuffer.h>
@@ -38,16 +43,13 @@ THE SOFTWARE.
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
-#include <glib.h>
-#include <glib/gstring.h>
-#include <glib/glist.h>
 #include "main_window_preferences.h"
 
 #define _COLUMN_SCHEME_TOGGLE_ 0
 #define _COLUMN_ID_ 1
 #define _COLUMN_SCHEME_ 2
 
-typedef (* update_editorf)(void *);
+typedef void (*update_editorf)(void *);
 struct cwindow_preferences_handler
 {
 	struct capplication_handler *application_handler;

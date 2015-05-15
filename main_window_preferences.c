@@ -26,6 +26,11 @@ THE SOFTWARE.
 */
 
 #include <stdio.h>
+#include <sys/stat.h>
+#include <glib.h>
+#include <glib/gstring.h>
+#include <glib/glist.h>
+#include <glib/gprintf.h>
 #include <gtk/gtk.h>
 #include <gtksourceview/gtksourceview.h>
 #include <gtksourceview/gtksourcebuffer.h>
@@ -36,9 +41,6 @@ THE SOFTWARE.
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
-#include <glib.h>
-#include <glib/gstring.h>
-#include <glib/glist.h>
 #include "main_window_preferences.h"
 #include "module.h"
 
@@ -186,7 +188,6 @@ static gboolean entry_custom_gtk_theme_key_press_event(GtkWidget *widget, GdkEve
 
 static void window_preferences_destroy(GtkWidget *widget, gpointer user_pointer)
 {
-	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_pointer;
 	gtk_widget_hide(widget);
 }
 
@@ -206,7 +207,6 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_box_pack_start(GTK_BOX(window_preferences_handler->box), window_preferences_handler->notebook, TRUE, TRUE, 0);
 	
 	GtkWidget *box_page = NULL;
-	GtkWidget *box_tmp = NULL;
 	GtkWidget *widget = NULL;
 	GtkWidget *box_group = NULL;
 	GtkWidget *scrolled_window = NULL;

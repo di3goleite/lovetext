@@ -27,6 +27,11 @@ THE SOFTWARE.
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <glib.h>
+#include <glib/gstring.h>
+#include <glib/glist.h>
+#include <glib/gprintf.h>
 #include <gtk/gtk.h>
 #include <gtksourceview/gtksourceview.h>
 #include <gtksourceview/gtksourcebuffer.h>
@@ -37,9 +42,6 @@ THE SOFTWARE.
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
-#include <glib.h>
-#include <glib/gstring.h>
-#include <glib/glist.h>
 #include "module.h"
 
 struct cpreferences *alloc_preferences()

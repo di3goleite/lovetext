@@ -7,13 +7,13 @@ LDLIBS += `pkg-config --libs gtk+-3.0 gtksourceview-3.0 x11 lua`
 CFLAGS += `pkg-config --cflags gtk+-3.0 gtksourceview-3.0 x11 lua`
 
 compile:
-	$(CC) -g $(CFLAGS) -o module.o -c module.c
-	$(CC) -g $(CFLAGS) -o main_window_preferences.o -c main_window_preferences.c
-	$(CC) -g $(CFLAGS) -o main_window.o -c main_window.c
-	$(CC) -g $(CFLAGS) -o main.o -c main.c
+	$(CC) -Wall -g $(CFLAGS) -o module.o -c module.c
+	$(CC) -Wall -g $(CFLAGS) -o main_window_preferences.o -c main_window_preferences.c
+	$(CC) -Wall -g $(CFLAGS) -o main_window.o -c main_window.c
+	$(CC) -Wall -g $(CFLAGS) -o main.o -c main.c
 	@echo ''
 	@echo 'Linking files.'
-	$(CC) -o ./lovetext *.o $(LDLIBS)
+	$(CC) -Wall -o ./lovetext *.o $(LDLIBS)
 
 install:
 	install -m755 $(SRCDIR)/lovetext $(DESTDIR)/usr/bin/lovetext

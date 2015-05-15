@@ -29,6 +29,11 @@ THE SOFTWARE.
 #define _MODULE_H_
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <glib.h>
+#include <glib/gstring.h>
+#include <glib/glist.h>
+#include <glib/gprintf.h>
 #include <gtk/gtk.h>
 #include <gtksourceview/gtksource.h>
 #include <gtksourceview/gtksourceview.h>
@@ -41,9 +46,6 @@ THE SOFTWARE.
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
-#include <glib.h>
-#include <glib/gstring.h>
-#include <glib/glist.h>
 
 struct cbuffer_ref
 {
