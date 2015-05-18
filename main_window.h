@@ -89,7 +89,7 @@ struct cwindow_handler
 
 void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences *preferences);
 struct cwindow_handler *alloc_window_handler(struct capplication_handler *application_handler, struct cpreferences *preferences);
-struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, gchar *file_name, gchar *text);
+struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, const gchar *file_name, const gchar *text);
 
 #endif
 

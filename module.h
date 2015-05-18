@@ -83,11 +83,23 @@ struct cpreferences
 	GtkPositionType tabs_position;
 	
 	// [editor]
+	gboolean show_grid;
+	gboolean show_map;
+	gboolean draw_spaces_space;
+	gboolean draw_spaces_tab;
+	gboolean draw_spaces_newline;
+	gboolean draw_spaces_nbsp;
+	gboolean draw_spaces_text;
+	gboolean draw_spaces_leading;
+	gboolean draw_spaces_trailing;
+	
+	gboolean right_margin_position;
 	gboolean show_line_marks;
 	gboolean show_line_numbers;
 	gboolean show_right_margin;
 	gboolean highlight_current_line;
 	gboolean highlight_matching_brackets;
+	gboolean wrap_mode;
 	gboolean auto_indent;
 	gint tab_width;
 	

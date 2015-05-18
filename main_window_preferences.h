@@ -55,7 +55,8 @@ struct cwindow_preferences_handler
 	struct capplication_handler *application_handler;
 	
 	GtkWidget *window;
-	GtkWidget *box;
+	GtkWidget *stack_sidebar;
+	GtkWidget *stack;
 	GtkWidget *notebook;
 	GtkWidget *tree_view;
 	GtkWidget *combo_box_tab_pos;

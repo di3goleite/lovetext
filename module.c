@@ -115,8 +115,21 @@ struct cpreferences *alloc_preferences()
 	preferences->show_action_bar = FALSE;
 	preferences->show_tool_bar = FALSE;
 	preferences->use_custom_gtk_theme = FALSE;
+	preferences->show_map = FALSE;
+	preferences->show_grid = FALSE;
 	
+	preferences->draw_spaces_space = FALSE;
+	preferences->draw_spaces_leading = FALSE;
+	preferences->draw_spaces_nbsp = FALSE;
+	preferences->draw_spaces_newline = FALSE;
+	preferences->draw_spaces_tab = FALSE;
+	preferences->draw_spaces_text = FALSE;
+	preferences->draw_spaces_trailing = FALSE;
+	
+	preferences->wrap_mode = 0;
 	preferences->tabs_position = 2;
+	preferences->show_right_margin = TRUE;
+	preferences->right_margin_position = 80;
 	preferences->show_line_numbers = TRUE;
 	preferences->show_line_marks = TRUE;
 	preferences->show_right_margin = TRUE;
@@ -129,14 +142,6 @@ struct cpreferences *alloc_preferences()
 		if (g_key_file_load_from_file(preferences->configuration_file,
 		preferences->configuration_file_path->str, G_KEY_FILE_NONE, NULL)) {
 			g_printf("[MESSAGE] Configuration file loaded.\n");
-			scheme_id = g_key_file_get_string(preferences->configuration_file,
-				"editor",
-				"scheme_id",
-				NULL);
-			font_name = g_key_file_get_string(preferences->configuration_file,
-				"editor",
-				"font",
-				NULL);
 			preferences->start_new_page = g_key_file_get_boolean(preferences->configuration_file,
 				"general",
 				"start_new_page",
@@ -169,9 +174,25 @@ struct cpreferences *alloc_preferences()
 				"general",
 				"tabs_position",
 				NULL);
+			scheme_id = g_key_file_get_string(preferences->configuration_file,
+				"editor",
+				"scheme_id",
+				NULL);
+			font_name = g_key_file_get_string(preferences->configuration_file,
+				"editor",
+				"font",
+				NULL);
 			preferences->show_line_numbers = g_key_file_get_boolean(preferences->configuration_file,
 				"editor",
 				"show_line_numbers",
+				NULL);
+			preferences->show_map = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"show_map",
+				NULL);
+			preferences->show_grid = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"show_grid",
 				NULL);
 			preferences->show_right_margin = g_key_file_get_boolean(preferences->configuration_file,
 				"editor",
@@ -196,6 +217,34 @@ struct cpreferences *alloc_preferences()
 			preferences->tab_width = g_key_file_get_integer(preferences->configuration_file,
 				"editor",
 				"tab_width",
+				NULL);
+			preferences->draw_spaces_nbsp = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"draw_spaces_nbsp",
+				NULL);
+			preferences->draw_spaces_space = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"draw_spaces_space",
+				NULL);
+			preferences->draw_spaces_newline = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"draw_spaces_newline",
+				NULL);
+			preferences->draw_spaces_tab = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"draw_spaces_tab",
+				NULL);
+			preferences->draw_spaces_text = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"draw_spaces_text",
+				NULL);
+			preferences->draw_spaces_leading = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"draw_spaces_leading",
+				NULL);
+			preferences->draw_spaces_trailing = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"draw_spaces_trailing",
 				NULL);
 		} else {
 			g_printf("[ERROR] Failed to open \"%s\"\n", preferences->configuration_file_path->str);
