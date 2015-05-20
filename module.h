@@ -47,6 +47,12 @@ THE SOFTWARE.
 #include <lualib.h>
 #include <lauxlib.h>
 
+#define _BUILD_NUMBER_ "200620052015"
+#define _PROGRAM_NAME_ "LoveText"
+#define _PROGRAM_YEAR_ "2015"
+#define _PROGRAM_VERSION_ "0.8"
+#define _PROGRAM_AUTHOR_ "Felipe Ferreira da Silva"
+
 struct cbuffer_ref
 {
 	GString *file_name;

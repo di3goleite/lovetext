@@ -906,9 +906,13 @@ static void action_about_activate(GSimpleAction *simple, GVariant *parameter, gp
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	g_printf("[MESSAGE] Performing action \"window.about\".\n");
 	GtkWidget *window_about = gtk_about_dialog_new();
-	
+	GString *version_string = g_string_new(_PROGRAM_VERSION_);
+	version_string = g_string_append(version_string, " (build ");
+	version_string = g_string_append(version_string, _BUILD_NUMBER_);
+	version_string = g_string_append(version_string, ")");
 	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(window_about), "Love Text");
-	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window_about), "0.8");
+	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window_about), version_string->str);
+	g_string_free(version_string, TRUE);
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window_about), "Copyright © 2015 by Felipe Ferreira da Silva");
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window_about), "Love Text is a simple, lightweight and extensible text editor.");
 	gtk_about_dialog_set_license_type(GTK_ABOUT_DIALOG(window_about), GTK_LICENSE_MIT_X11);
@@ -978,16 +982,9 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 		}
 	}
 	
-	if (event->keyval == GDK_KEY_Down) {
-		g_printf("[MESSAGE] Going to next search result.\n");
-		struct cbuffer_ref *buffer_ref = NULL;
-		GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
-			gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
-		if (scrolled_window) {
-			buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buffer_ref");
-		}
-	
-		if (buffer_ref) {
+	if (buffer_ref) {
+		if (event->keyval == GDK_KEY_Down) {
+			g_printf("[MESSAGE] Going to next search result.\n");
 			GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				"insert");
 			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
@@ -997,7 +994,7 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				&buffer_ref->current_search_end,
 				cursor_end);
-			
+		
 			gtk_source_search_context_forward(buffer_ref->search_context, &buffer_ref->current_search_end,
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
@@ -1010,20 +1007,10 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 			gtk_text_buffer_select_range(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
+			return TRUE;
 		}
-		return TRUE;
-	}
-	
-	if (event->keyval == GDK_KEY_Up) {
-		g_printf("[MESSAGE] Going to previous search result.\n");
-		struct cbuffer_ref *buffer_ref = NULL;
-		GtkWidget *scrolled_window = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook),
-			gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook)));
-		if (scrolled_window) {
-			buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buffer_ref");
-		}
-	
-		if (buffer_ref) {
+		if (event->keyval == GDK_KEY_Up) {
+			g_printf("[MESSAGE] Going to previous search result.\n");
 			GtkTextMark *cursor = gtk_text_buffer_get_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), "insert");
 			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				&buffer_ref->current_search_start,
@@ -1032,7 +1019,7 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				&buffer_ref->current_search_end,
 				cursor_end);
-			
+		
 			gtk_source_search_context_backward(buffer_ref->search_context, &buffer_ref->current_search_start,
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
@@ -1045,8 +1032,8 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 			gtk_text_buffer_select_range(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
+			return TRUE;
 		}
-		return TRUE;
 	}
 	return FALSE;
 }
@@ -1868,39 +1855,36 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 	}
 	
 	// Load extension scripts.
-	DIR *dir;
-	struct dirent *ent;
 	if (preferences->extension_path) {
 		g_printf("[MESSAGE] Loading extensions.\n");
-		dir = opendir(preferences->extension_path->str);
+		GDir *dir = g_dir_open(preferences->extension_path->str,
+			0,
+			NULL);
 		if (dir) {
-			ent = readdir(dir);
+			//ent = readdir(dir);
+			const gchar *ent = g_dir_read_name(dir);
 			while (ent != NULL) {
-				char *name = ent->d_name;
-				if (name[0] == '.') {
-					//g_printf("Ignoring hidden item \"%s\".\n", name);
-				} else {
-					GString *source_full_name = g_string_new(preferences->extension_path->str);
-					source_full_name = g_string_append(source_full_name, "/");
-					source_full_name = g_string_append(source_full_name, name);
-					if (ent->d_type == DT_REG) {
-						char *name_extension = strrchr(name, '.');
-						if (name_extension != NULL ) {
-							if (strcmp(name_extension, ".lua") == 0) {
-								luaL_loadfile(lua, source_full_name->str);
-								if (lua_pcall(lua, 0, 0, 0) != LUA_OK) {
-									g_printf("[ERROR] Fail to load lua script \"%s\".\n", source_full_name->str);
-								} else {
-									g_printf("[MESSAGE] Lua script \"%s\" loaded.\n", source_full_name->str);
-								}
+				g_printf("-> Directory \"%s\".\n", ent);
+				GString *source_full_name = g_string_new(preferences->extension_path->str);
+				source_full_name = g_string_append(source_full_name, "/");
+				source_full_name = g_string_append(source_full_name, ent);
+				if (g_file_test(source_full_name->str, G_FILE_TEST_IS_REGULAR)) {
+					char *name_extension = strrchr(ent, '.');
+					if (name_extension != NULL ) {
+						if (strcmp(name_extension, ".lua") == 0) {
+							luaL_loadfile(lua, source_full_name->str);
+							if (lua_pcall(lua, 0, 0, 0) != LUA_OK) {
+								g_printf("[ERROR] Fail to load lua script \"%s\".\n", source_full_name->str);
+							} else {
+								g_printf("[MESSAGE] Lua script \"%s\" loaded.\n", source_full_name->str);
 							}
 						}
 					}
-					g_string_free(source_full_name, TRUE);
 				}
-				ent = readdir(dir);
+				g_string_free(source_full_name, TRUE);
+				ent = g_dir_read_name(dir);
 			}
-			closedir(dir);
+			g_dir_close(dir);
 		}
 	} else {
 		g_printf("[ERROR] Ignoring extensions. Extensions path not set.\n");

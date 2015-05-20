@@ -333,6 +333,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 		TRUE,
 		0);
 	widget = gtk_label_new("Decoration");
+	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
 	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
 	gtk_label_set_markup(GTK_LABEL(widget), "<b>Decoration</b>\nUse client-side decoration instead of server-side decoration.");
 	gtk_box_pack_start(GTK_BOX(box_widget),

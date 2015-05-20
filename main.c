@@ -43,11 +43,6 @@ THE SOFTWARE.
 #include "main_window_preferences.h"
 #include "module.h"
 
-#define _PROGRAM_NAME_ "LoveText"
-#define _PROGRAM_YEAR_ "2015"
-#define _PROGRAM_VERSION_ "0.8"
-#define _PROGRAM_AUTHOR_ "Felipe Ferreira da Silva"
-
 static gint main_application_command_line_handler(gpointer user_data)
 {
 	struct capplication_handler *application_handler = (struct capplication_handler *)user_data;
