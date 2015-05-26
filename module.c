@@ -116,6 +116,7 @@ struct cpreferences *alloc_preferences()
 	preferences->show_tool_bar = FALSE;
 	preferences->use_custom_gtk_theme = FALSE;
 	preferences->show_map = FALSE;
+	preferences->wrap_lines = FALSE;
 	preferences->show_grid = FALSE;
 	
 	preferences->draw_spaces_space = FALSE;
@@ -185,6 +186,10 @@ struct cpreferences *alloc_preferences()
 			preferences->show_line_numbers = g_key_file_get_boolean(preferences->configuration_file,
 				"editor",
 				"show_line_numbers",
+				NULL);
+			preferences->wrap_lines = g_key_file_get_boolean(preferences->configuration_file,
+				"editor",
+				"wrap_lines",
 				NULL);
 			preferences->show_map = g_key_file_get_boolean(preferences->configuration_file,
 				"editor",
@@ -273,6 +278,7 @@ struct cpreferences *alloc_preferences()
 struct capplication_handler *alloc_application_handler(void)
 {
 	struct capplication_handler *application_handler = (struct capplication_handler *)malloc(sizeof(struct capplication_handler));
+	application_handler->preferences = NULL;
 	application_handler->version = FALSE;
 	application_handler->help = FALSE;
 	application_handler->file_name_input = NULL;

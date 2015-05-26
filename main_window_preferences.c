@@ -45,34 +45,34 @@ THE SOFTWARE.
 #include "module.h"
 
 // Page general signals.
-static gboolean switch_use_decoration_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_use_decoration_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->use_decoration = state;
+	window_preferences_handler->preferences->use_decoration = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_show_menu_bar_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_show_menu_bar_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_menu_bar = state;
+	window_preferences_handler->preferences->show_menu_bar = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_show_action_bar_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_show_action_bar_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_action_bar = state;
+	window_preferences_handler->preferences->show_action_bar = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_use_custom_gtk_theme_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_use_custom_gtk_theme_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->use_custom_gtk_theme = state;
+	window_preferences_handler->preferences->use_custom_gtk_theme = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -106,106 +106,114 @@ static gboolean entry_custom_gtk_theme_key_press_event(GtkWidget *widget, GdkEve
 }
 
 // Page editor signals.
-static gboolean switch_draw_spaces_leading_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_draw_spaces_leading_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_leading = state;
+	window_preferences_handler->preferences->draw_spaces_leading = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_draw_spaces_line_break_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_draw_spaces_line_break_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_newline = state;
+	window_preferences_handler->preferences->draw_spaces_newline = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_draw_spaces_nbsp_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_draw_spaces_nbsp_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_nbsp = state;
+	window_preferences_handler->preferences->draw_spaces_nbsp = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_draw_spaces_space_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_draw_spaces_space_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_space = state;
+	window_preferences_handler->preferences->draw_spaces_space = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_draw_spaces_text_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_draw_spaces_text_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_text = state;
+	window_preferences_handler->preferences->draw_spaces_text = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_draw_spaces_trailing_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_draw_spaces_trailing_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_trailing = state;
+	window_preferences_handler->preferences->draw_spaces_trailing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_draw_spaces_tab_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_draw_spaces_tab_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_tab = state;
+	window_preferences_handler->preferences->draw_spaces_tab = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_highlight_current_line_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_highlight_current_line_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->highlight_current_line = state;
+	window_preferences_handler->preferences->highlight_current_line = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_highlight_matching_brackets_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_highlight_matching_brackets_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->highlight_matching_brackets = state;
+	window_preferences_handler->preferences->highlight_matching_brackets = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_show_grid_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_show_grid_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_grid = state;
+	window_preferences_handler->preferences->show_grid = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_show_map_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_wrap_lines_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_map = state;
+	window_preferences_handler->preferences->wrap_lines = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_show_line_numbers_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_show_map_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_line_numbers = state;
+	window_preferences_handler->preferences->show_map = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
 
-static gboolean switch_show_right_margin_state_set(GtkWidget *widget, gboolean state, gpointer user_data)
+static gboolean check_button_show_line_numbers_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_right_margin = state;
+	window_preferences_handler->preferences->show_line_numbers = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
+	return FALSE;
+}
+
+static gboolean check_button_show_right_margin_toggled(GtkWidget *widget, gpointer user_data)
+{
+	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
+	window_preferences_handler->preferences->show_right_margin = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -260,14 +268,18 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	window_preferences_handler->preferences = preferences;
 	window_preferences_handler->window = gtk_dialog_new_with_buttons("Preferences",
 		NULL,
-		GTK_DIALOG_USE_HEADER_BAR,
+		GTK_DIALOG_USE_HEADER_BAR | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
 		"Close",
-		GTK_RESPONSE_CLOSE,
+		GTK_RESPONSE_CANCEL,
 		NULL);
-	gtk_widget_set_size_request(GTK_WIDGET(window_preferences_handler->window), 480, 480);
+	
+	//gtk_widget_set_size_request(GTK_WIDGET(window_preferences_handler->window), 480, 480);
 	
 	// Get content area.
 	GtkWidget *box_content = gtk_dialog_get_content_area(GTK_DIALOG(window_preferences_handler->window));
+	//GtkWidget *box_content = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_set_size_request(GTK_WIDGET(box_content), 400, 400);
+	window_preferences_handler->page = box_content;
 	gtk_orientable_set_orientation(GTK_ORIENTABLE(box_content), GTK_ORIENTATION_HORIZONTAL);
 	gtk_container_set_border_width(GTK_CONTAINER(box_content), 8);
 	gtk_box_set_spacing(GTK_BOX(box_content), 8);
@@ -281,7 +293,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 		FALSE,
 		TRUE,
 		0);
-	gtk_widget_set_size_request(GTK_WIDGET(scrolled_window), 120, -1);
+	gtk_widget_set_size_request(GTK_WIDGET(scrolled_window), 160, -1);
 	
 	window_preferences_handler->stack_sidebar = gtk_stack_sidebar_new();
 	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(window_preferences_handler->stack_sidebar));
@@ -301,9 +313,8 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	
 	// Pages.
 	GtkWidget *box_page = NULL;
-	GtkWidget *box_widget = NULL;
 	GtkWidget *widget = NULL;
-	
+	GtkWidget *label = NULL;
 	// Page general.
 	g_printf("[MESSAGE] Create page \"general\".\n");
 	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
@@ -318,107 +329,68 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(box_page));
 	
 	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->use_decoration);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_use_decoration_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->use_decoration);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_use_decoration_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Decoration");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Decoration</b>\nUse client-side decoration instead of server-side decoration.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Decoration");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Decoration</b>\nUse client-side decoration instead of server-side decoration.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
 	// Option show menu bar.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 8);
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_menu_bar);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_menu_bar_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->show_menu_bar);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_show_menu_bar_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Show menu bar");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Show menu bar</b>\nShow menu bar when using server-side decoration.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Show menu bar");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Show menu bar</b>\nShow menu bar when using server-side decoration.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
 	// Option show action bar.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(GTK_WIDGET(box_widget), 8);
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_action_bar);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_action_bar_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->show_action_bar);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_show_action_bar_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Show action bar");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Show action bar</b>\nAlways keep the action bar visible.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Show action bar");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Show action bar</b>\nAlways keep the action bar visible.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
 	// Option use custom gtk theme.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(GTK_WIDGET(box_widget), 8);
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->use_custom_gtk_theme);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_use_custom_gtk_theme_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->use_custom_gtk_theme);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_use_custom_gtk_theme_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Use custom gtk theme");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Use custom gtk theme</b>\nUse custom gtk theme.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Use custom gtk theme");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Use custom gtk theme</b>\nUse custom gtk theme.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
 	widget = gtk_entry_new();
 	gtk_widget_set_margin_top(GTK_WIDGET(widget), 2);
@@ -428,12 +400,12 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, TRUE, 0);
 	
 	// Option tabs position.
-	widget = gtk_label_new("Tabs position");
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Tabs position</b>");
-	gtk_widget_set_halign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_widget_set_margin_top(GTK_WIDGET(widget), 8);
-	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
+	label = gtk_label_new("Tabs position");
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Tabs position</b>");
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_START);
+	gtk_widget_set_margin_top(GTK_WIDGET(label), 8);
+	gtk_box_pack_start(GTK_BOX(box_page), label, FALSE, FALSE, 0);
 	
 	widget = gtk_combo_box_text_new();
 	window_preferences_handler->combo_box_tab_pos = widget;
@@ -459,358 +431,245 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	box_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(box_page));
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	// Option show line numbers.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_line_numbers);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_line_numbers_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->show_line_numbers);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_show_line_numbers_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Show line numbers");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Show line numbers</b>\nDescription.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Show line numbers");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Show line numbers</b>\nDescription.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(GTK_WIDGET(box_widget), 8);
+	// Option highlight current line.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->highlight_current_line);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_highlight_current_line_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->highlight_current_line);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_highlight_current_line_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Highlight current line");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Highlight current line</b>\nDescription.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Highlight current line");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Highlight current line</b>\nDescription.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 8);
+	// Option highlight matching brackets.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->highlight_matching_brackets);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_highlight_matching_brackets_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->highlight_matching_brackets);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_highlight_matching_brackets_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Highlight matching brackets");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Highlight matching brackets</b>\nDescription.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Highlight matching brackets");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Highlight matching brackets</b>\nDescription.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(GTK_WIDGET(box_widget), 8);
+	// Option show grid.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_grid);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_grid_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->show_grid);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_show_grid_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Show grid");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Show grid</b>\nDescription.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Show grid");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Show grid</b>\nDescription.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(GTK_WIDGET(box_widget), 8);
+	// Option wrap lines.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->wrap_lines);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_wrap_lines_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->show_right_margin);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_show_right_margin_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Show right margin");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Show righ margin</b>\nDescription.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Wrap lines");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Wrap lines</b>\nDescription.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 8);
+	// Option show right margin.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_right_margin);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_right_margin_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->show_map);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_show_map_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Show overview map");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Show overview map</b>\nDescription.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
+	label = gtk_label_new("Show right margin");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Show righ margin</b>\nDescription.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
+	
+	// Option show overview map.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_map);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_map_toggled), window_preferences_handler);
+	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
+	label = gtk_label_new("Show overview map");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Show overview map</b>\nDescription.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
 	// Option draw spaces.
-	widget = gtk_label_new("Rules for drawing spaces");
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Rules for drawing spaces</b>");
-	gtk_widget_set_margin_top(GTK_WIDGET(widget), 8);
-	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, TRUE, 0);
-	gtk_widget_set_halign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	label = gtk_label_new("Rules for drawing spaces");
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Rules for drawing spaces</b>");
+	gtk_widget_set_margin_top(GTK_WIDGET(label), 8);
+	gtk_box_pack_start(GTK_BOX(box_page), label, FALSE, TRUE, 0);
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_START);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 2);
+	// Option draw space character.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_space);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_space_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->draw_spaces_space);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_draw_spaces_space_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Draw space character.");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "Draw space character.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Draw space character.");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "Draw space character.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 2);
+	// Option draw tab character.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_tab);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_tab_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->draw_spaces_tab);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_draw_spaces_tab_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Draw tab character.");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "Draw tab character.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 2);
-	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->draw_spaces_newline);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_draw_spaces_line_break_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_label_new("Draw line break character.");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "Draw line break character.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Draw tab character.");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "Draw tab character.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 2);
+	// Option draw line break character.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_newline);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_line_break_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->draw_spaces_nbsp);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_draw_spaces_nbsp_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Draw non-breaking whitespace character.");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "Draw non-breaking whitespace character.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Draw line break character.");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "Draw line break character.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 2);
+	// Option draw non-breaking whitespace character.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_nbsp);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_nbsp_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->draw_spaces_leading);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_draw_spaces_leading_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Draw leading whitespace character.");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "Draw leading whitespace character.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Draw non-breaking whitespace character.");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "Draw non-breaking whitespace character.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 2);
+	// Option draw leading whitespace character.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_leading);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_leading_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->draw_spaces_text);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_draw_spaces_text_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Draw whitespace inside text.");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "Draw whitespace inside text.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Draw leading whitespace character.");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "Draw leading whitespace character.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
-	// Option decoration.
-	box_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_margin_top(box_widget, 2);
+	// Option draw whitespace inside text.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_text);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_text_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
-		GTK_WIDGET(box_widget),
-		FALSE,
-		TRUE,
-		0);
-	widget = gtk_switch_new();
-	gtk_switch_set_state(GTK_SWITCH(widget), preferences->draw_spaces_trailing);
-	g_signal_connect(widget, "state-set", G_CALLBACK(switch_draw_spaces_trailing_state_set), window_preferences_handler);
-	gtk_box_pack_start(GTK_BOX(box_widget),
 		GTK_WIDGET(widget),
 		FALSE,
 		TRUE,
 		0);
-	widget = gtk_label_new("Draw trailing whitespace text.");
-	gtk_widget_set_margin_start(GTK_WIDGET(widget), 2);
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "Draw trailing whitespace text.");
-	gtk_box_pack_start(GTK_BOX(box_widget),
-		GTK_WIDGET(widget),
-		FALSE,
-		TRUE,
-		0);
+	label = gtk_label_new("Draw whitespace inside text.");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "Draw whitespace inside text.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
+	// Option draw trailing whitespace text.
+	widget = gtk_check_button_new();
+	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_trailing);
+	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_trailing_toggled), window_preferences_handler);
+	gtk_box_pack_start(GTK_BOX(box_page),
+		GTK_WIDGET(widget),
+		FALSE,
+		TRUE,
+		0);
+	label = gtk_label_new("Draw trailing whitespace text.");
+	gtk_widget_set_margin_start(GTK_WIDGET(label), 2);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "Draw trailing whitespace text.");
+	gtk_container_add(GTK_CONTAINER(widget), label);
 	
 	// Option font.
-	widget = gtk_label_new("Font");
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Font</b>");
-	gtk_widget_set_margin_top(GTK_WIDGET(widget), 8);
-	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, TRUE, 0);
-	gtk_widget_set_halign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	label = gtk_label_new("Font");
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Font</b>");
+	gtk_widget_set_margin_top(GTK_WIDGET(label), 8);
+	gtk_box_pack_start(GTK_BOX(box_page), label, FALSE, TRUE, 0);
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_START);
 	
 	widget = gtk_font_button_new();
 	gtk_font_button_set_font_name(GTK_FONT_BUTTON(widget), preferences->editor_font->str);
@@ -819,28 +678,26 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_box_pack_start(GTK_BOX(box_page), GTK_WIDGET(widget), FALSE, FALSE, 0);
 	
 	// Option right margin position.
-	widget = gtk_label_new("Right margin position");
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Right margin position</b>");
-	gtk_widget_set_margin_top(GTK_WIDGET(widget), 8);
-	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, TRUE, 0);
-	gtk_widget_set_halign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	label = gtk_label_new("Right margin position");
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Right margin position</b>");
+	gtk_widget_set_margin_top(GTK_WIDGET(label), 8);
+	gtk_box_pack_start(GTK_BOX(box_page), label, FALSE, TRUE, 0);
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_START);
 	
 	widget = gtk_spin_button_new_with_range(1, 800, 1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), preferences->right_margin_position);
 	g_signal_connect(widget, "value-changed", G_CALLBACK(spin_button_right_margin_position_value_changed), window_preferences_handler);
 	gtk_widget_set_margin_top(GTK_WIDGET(widget), 2);
-	gtk_box_pack_start(GTK_BOX(box_page), GTK_WIDGET(widget), FALSE, FALSE, 0);
-	
-	gtk_widget_show_all(box_page);
+	gtk_box_pack_start(GTK_BOX(box_page), GTK_WIDGET(widget), FALSE, TRUE, 0);
 	
 	// Option color scheme.
-	widget = gtk_label_new("Color scheme");
-	gtk_label_set_use_markup(GTK_LABEL(widget), TRUE);
-	gtk_label_set_markup(GTK_LABEL(widget), "<b>Color scheme</b>");
-	gtk_widget_set_margin_top(GTK_WIDGET(widget), 8);
-	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, TRUE, 0);
-	gtk_widget_set_halign(GTK_WIDGET(widget), GTK_ALIGN_START);
+	label = gtk_label_new("Color scheme");
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Color scheme</b>");
+	gtk_widget_set_margin_top(GTK_WIDGET(label), 8);
+	gtk_box_pack_start(GTK_BOX(box_page), label, FALSE, TRUE, 0);
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_START);
 	
 	widget = gtk_tree_view_new();
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(widget), FALSE);
@@ -895,7 +752,6 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_box_pack_start(GTK_BOX(box_page), scrolled_window, TRUE, TRUE, 0);
 	gtk_widget_show_all(box_page);
 	
-	
 	// Page plugins.
 	g_printf("[MESSAGE] Create page \"plugins\".\n");
 	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
@@ -930,6 +786,19 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 		}
 		lua_pop(lua, 1);
 	}
+	
+	// Page keybindings.
+	g_printf("[MESSAGE] Create page \"keybindings\".\n");
+	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+		GTK_POLICY_NEVER,
+		GTK_POLICY_AUTOMATIC);
+	gtk_stack_add_titled(GTK_STACK(window_preferences_handler->stack),
+		GTK_WIDGET(scrolled_window),
+		"keybindings",
+		"Keybindings");
+	box_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(box_page));
 	
 	g_printf("[MESSAGE] Preferences window created.\n");
 	return window_preferences_handler;

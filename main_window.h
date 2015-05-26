@@ -65,6 +65,9 @@ struct cwindow_handler
 	GtkWidget *action_widget_box;
 	GtkWidget *revealer;
 	
+	GtkWidget *stack_switcher;
+	GtkWidget *stack;
+	
 	GtkWidget *label_search_replace;
 	GtkWidget *search_and_replace_bar;
 	GtkWidget *search_bar;
@@ -80,9 +83,6 @@ struct cwindow_handler
 	
 	GtkAccelGroup *accelerator_group;
 	
-	int id_factory;
-	
-	struct cwindow_preferences_handler *window_preferences_handler;
 	GString *program_folder;
 	struct cpreferences *preferences;
 };

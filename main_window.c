@@ -131,6 +131,10 @@ static void update_views(struct cwindow_handler *window_handler)
 			gtk_source_view_set_auto_indent(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->auto_indent);
 			gtk_source_buffer_set_highlight_matching_brackets(GTK_SOURCE_BUFFER(source_buffer), preferences->highlight_matching_brackets);
 			gtk_source_view_set_highlight_current_line(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->highlight_current_line);
+			gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(buffer_ref->source_view), GTK_WRAP_NONE);
+			if (preferences->wrap_lines) {
+				gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(buffer_ref->source_view), GTK_WRAP_CHAR);
+			}
 			if (window_handler->preferences->scheme) {
 				const gchar *scheme_id = NULL;
 				
@@ -365,8 +369,6 @@ static void action_save_activate(GSimpleAction *simple, GVariant *parameter, gpo
 						lua_pushstring(lua, "f_save");
 						lua_gettable(lua, -2);
 						if (lua_isfunction(lua, -1)) {
-							//window_handler->id_factory = window_handler->id_factory + 1;
-							//lua_pushinteger(lua, window_handler->id_factory);
 							lua_pushlightuserdata(lua, buffer_ref->source_view);
 							lua_pushstring(lua, file_name);
 							if (lua_pcall(lua, 2, 0, 0) != LUA_OK) {
@@ -478,8 +480,6 @@ static void action_save_as_activate(GSimpleAction *simple, GVariant *parameter, 
 					lua_pushstring(lua, "f_save");
 					lua_gettable(lua, -2);
 					if (lua_isfunction(lua, -1)) {
-						//window_handler->id_factory = window_handler->id_factory + 1;
-						//lua_pushinteger(lua, window_handler->id_factory);
 						lua_pushlightuserdata(lua, buffer_ref->source_view);
 						lua_pushstring(lua, file_name);
 						if (lua_pcall(lua, 2, 0, 0) != LUA_OK) {
@@ -520,13 +520,15 @@ static void action_preferences_activate(GSimpleAction *simple, GVariant *paramet
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	
 	// Preferences window.
-	window_handler->window_preferences_handler = alloc_window_preferences_handler(window_handler->application_handler, window_handler->preferences);
-	gtk_window_set_transient_for(GTK_WINDOW(window_handler->window_preferences_handler->window), GTK_WINDOW(window_handler->window));
-	window_handler->window_preferences_handler->main_window_notebook = window_handler->notebook;
-	window_handler->window_preferences_handler->window_handler = window_handler;
-	window_handler->window_preferences_handler->update_editor = (update_editorf)update_editor;
-	gtk_widget_show_all(GTK_WIDGET(window_handler->window_preferences_handler->window));
-	gtk_dialog_run(GTK_DIALOG(window_handler->window_preferences_handler->window));
+	struct cwindow_preferences_handler *window_preferences_handler = alloc_window_preferences_handler(window_handler->application_handler, window_handler->preferences);
+	gtk_window_set_transient_for(GTK_WINDOW(window_preferences_handler->window), GTK_WINDOW(window_handler->window));
+	window_preferences_handler->main_window_notebook = window_handler->notebook;
+	window_preferences_handler->window_handler = window_handler;
+	window_preferences_handler->update_editor = (update_editorf)update_editor;
+	gtk_widget_show_all(GTK_WIDGET(window_preferences_handler->window));
+	gtk_dialog_run(GTK_DIALOG(window_preferences_handler->window));
+	gtk_widget_destroy(GTK_WIDGET(window_preferences_handler->window));
+	free(window_preferences_handler);
 }
 
 static void action_close_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
@@ -949,7 +951,31 @@ THE SOFTWARE.");
 	gtk_widget_destroy(GTK_WIDGET(window_about));
 }
 
-static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *event, gpointer user_data)
+static gboolean entry_replace_key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
+{
+	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
+	struct cpreferences *preferences = window_handler->preferences;
+	if (event->keyval == GDK_KEY_Escape) {
+		gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);
+		gtk_widget_set_visible(GTK_WIDGET(window_handler->replace_bar), FALSE);
+		if (preferences->show_action_bar == FALSE) {
+			gtk_widget_hide(GTK_WIDGET(window_handler->action_bar));
+		}
+		gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
+		if (current_page > -1) {
+			GtkWidget *widget_page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(window_handler->notebook), current_page);
+			struct cbuffer_ref *buffer_ref = NULL;
+			buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buffer_ref");
+			if (buffer_ref) {
+				gtk_widget_grab_focus(GTK_WIDGET(buffer_ref->source_view));
+			}
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean entry_search_key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	struct cpreferences *preferences = window_handler->preferences;
@@ -994,7 +1020,7 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				&buffer_ref->current_search_end,
 				cursor_end);
-		
+			
 			gtk_source_search_context_forward(buffer_ref->search_context, &buffer_ref->current_search_end,
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
@@ -1019,7 +1045,7 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 			gtk_text_buffer_get_iter_at_mark(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)),
 				&buffer_ref->current_search_end,
 				cursor_end);
-		
+			
 			gtk_source_search_context_backward(buffer_ref->search_context, &buffer_ref->current_search_start,
 				&buffer_ref->current_search_start,
 				&buffer_ref->current_search_end);
@@ -1038,7 +1064,7 @@ static gboolean entry_search_key_press_event(GtkWidget *widget,  GdkEventKey *ev
 	return FALSE;
 }
 
-static gboolean entry_search_key_release_event(GtkWidget *widget,  GdkEventKey *event, gpointer user_data)
+static gboolean entry_search_key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	
@@ -1296,7 +1322,7 @@ static int lua_create_page(lua_State *lua)
 	create_page(window_handler, file_name, text);
 	return 0;
 }
-    
+
 static void button_previous_clicked(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
@@ -1546,6 +1572,11 @@ static void window_destroy(GtkWidget *widget, gpointer user_data)
 		"show_grid",
 		preferences->show_grid);
 	
+	g_key_file_set_boolean(preferences->configuration_file,
+		"editor",
+		"wrap_lines",
+		preferences->wrap_lines);
+	
 	g_key_file_set_string(preferences->configuration_file,
 		"editor",
 		"font",
@@ -1617,13 +1648,13 @@ static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint p
 		buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buffer_ref");
 		if (buffer_ref) {
 			window_handler->preferences->last_path = g_string_assign(window_handler->preferences->last_path, buffer_ref->file_name->str);
-		
+			
 			char *i = strrchr(window_handler->preferences->last_path->str, '/');
 			if (i) {
 				window_handler->preferences->last_path = g_string_set_size(window_handler->preferences->last_path, i - window_handler->preferences->last_path->str);
 			}
 			//g_printf("PATH %i TO \"%s\"\n\n\n", page_num, window_handler->preferences->last_path->str);
-		
+			
 			gtk_header_bar_set_subtitle(GTK_HEADER_BAR(window_handler->header_bar), buffer_ref->file_name->str);
 			lua_getglobal(lua, "editor");
 			if (lua_istable(lua, -1)) {
@@ -1944,7 +1975,6 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 
 static GMenu *create_model(struct cwindow_handler *window_handler)
 {
-	GMenu *menu_model = g_menu_new();
 	GSimpleActionGroup *action_group = NULL;
 	
 	// Main action group.
@@ -2024,41 +2054,10 @@ static GMenu *create_model(struct cwindow_handler *window_handler)
 	g_signal_connect(action, "activate", G_CALLBACK(action_toggle_action_bar_activate), window_handler);
 	g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
 	
-	GMenu *menu_model_sub = NULL;
-	
-	// Menu main.
-	menu_model_sub = g_menu_new();
-	g_menu_append_submenu(G_MENU(menu_model), "Main", G_MENU_MODEL(menu_model_sub));
-	g_menu_append(menu_model_sub, "New", "main.new");
-	g_menu_append(menu_model_sub, "Open", "main.open");
-	g_menu_append(menu_model_sub, "Save", "main.save");
-	g_menu_append(menu_model_sub, "Save as", "main.save_as");
-	g_menu_append(menu_model_sub, "Preferences", "main.preferences");
-	g_menu_append(menu_model_sub, "About", "main.about");
-	g_menu_append(menu_model_sub, "Exit", "main.exit");
-	
-	// Menu edit.
-	menu_model_sub = g_menu_new();
-	g_menu_append_submenu(G_MENU(menu_model), "Edit", G_MENU_MODEL(menu_model_sub));
-	g_menu_append(menu_model_sub, "Undo", "edit.undo");
-	g_menu_append(menu_model_sub, "Redo", "edit.redo");
-	g_menu_append(menu_model_sub, "Copy", "edit.copy");
-	g_menu_append(menu_model_sub, "Paste", "edit.paste");
-	g_menu_append(menu_model_sub, "Cut", "edit.cut");
-	g_menu_append(menu_model_sub, "Delete", "edit.delete");
-	
-	// Menu view.
-	menu_model_sub = g_menu_new();
-	g_menu_append_submenu(G_MENU(menu_model), "View", G_MENU_MODEL(menu_model_sub));
-	g_menu_append(menu_model_sub, "Toggle action bar", "view.toggle_action_bar");
-	g_menu_append(menu_model_sub, "Toggle menu bar", "view.toggle_menu_bar");
-	g_menu_append(menu_model_sub, "Toggle fullscreen", "view.toggle_fullscreen");
-	
+	// Main accelerators.
 	GtkAccelGroup *accelerator_group = gtk_accel_group_new();
 	window_handler->accelerator_group = accelerator_group;
 	gtk_window_add_accel_group(GTK_WINDOW(window_handler->window), accelerator_group);
-	
-	// Main accelerators.
 	
 	gtk_accel_group_connect(accelerator_group,
 		GDK_KEY_N,
@@ -2146,6 +2145,71 @@ static GMenu *create_model(struct cwindow_handler *window_handler)
 		GTK_ACCEL_VISIBLE,
 		g_cclosure_new(G_CALLBACK(accel_replace), window_handler, NULL));
 	
+	GMenu *menu_model = g_menu_new();
+	GMenu *menu_model_sub = NULL;
+	GMenuItem *menu_item = NULL;
+	
+	// Menu main.
+	menu_model_sub = g_menu_new();
+	g_menu_append_submenu(G_MENU(menu_model), "Main", G_MENU_MODEL(menu_model_sub));
+	
+	menu_item = g_menu_item_new("New", "main.new");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new-symbolic");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Open", "main.open");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new-symbolic");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Save", "main.save");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Save as", "main.save_as");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Preferences", "main.preferences");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("About", "main.about");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Exit", "main.exit");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	gtk_menu_set_accel_path(GTK_MENU(menu_model_sub), "main");
+	// Menu edit.
+	menu_model_sub = g_menu_new();
+	g_menu_append_submenu(G_MENU(menu_model), "Edit", G_MENU_MODEL(menu_model_sub));
+	menu_item = g_menu_item_new("Undo", "edit.undo");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Redo", "edit.redo");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Copy", "edit.copy");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Paste", "edit.paste");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Cut", "edit.cut");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Delete", "edit.delete");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	
+	// Menu view.
+	menu_model_sub = g_menu_new();
+	g_menu_append_submenu(G_MENU(menu_model), "View", G_MENU_MODEL(menu_model_sub));
+	menu_item = g_menu_item_new("Toggle action bar", "view.toggle_action_bar");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Toggle menu bar", "view.toggle_menu_bar");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	menu_item = g_menu_item_new("Toggle fullscreen", "view.toggle_fullscreen");
+	g_menu_item_set_attribute(menu_item, G_MENU_ATTRIBUTE_ICON, "document-new");
+	g_menu_append_item(menu_model_sub, menu_item);
+	
 	return menu_model;
 }
 
@@ -2154,6 +2218,7 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	g_printf("[MESSAGE] Creating main window.\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)malloc(sizeof(struct cwindow_handler));
 	window_handler->application_handler = application_handler;
+	window_handler->preferences = preferences;
 	window_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	window_handler->box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	window_handler->revealer = NULL;
@@ -2161,7 +2226,7 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	window_handler->drag_and_drop = FALSE;
 	gtk_window_set_icon_name(GTK_WINDOW(window_handler->window), "lovetext");
 	gtk_window_set_title(GTK_WINDOW(window_handler->window), "Love Text");
-	gtk_widget_set_size_request(GTK_WIDGET(window_handler->window), 480, 380);
+	gtk_widget_set_size_request(GTK_WIDGET(window_handler->window), 420, 380);
 	g_signal_connect(window_handler->window, "destroy", G_CALLBACK(window_destroy), window_handler);
 	
 	// Header bar.
@@ -2183,7 +2248,7 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 		gtk_container_remove(GTK_CONTAINER(window_handler->main_button), child);
 	}
 	
-	GIcon *icon = g_themed_icon_new("view-sidebar-symbolic");
+	GIcon *icon = g_themed_icon_new("open-menu-symbolic");
 	child = gtk_image_new_from_gicon(icon, GTK_ICON_SIZE_BUTTON);
 	g_object_unref(icon);
 	gtk_container_add(GTK_CONTAINER(window_handler->main_button), GTK_WIDGET(child));
@@ -2206,9 +2271,9 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	
 	// Menu bar.
 	g_printf("[MESSAGE] Creating menu bar.\n");
-	GtkWidget *menu_bar = gtk_menu_bar_new_from_model(G_MENU_MODEL(menu_model));
-	window_handler->menu_bar = menu_bar;
 	if (preferences->use_decoration == FALSE) {
+		GtkWidget *menu_bar = gtk_menu_bar_new_from_model(G_MENU_MODEL(menu_model));
+		window_handler->menu_bar = menu_bar;
 		gtk_box_pack_start(GTK_BOX(window_handler->box), window_handler->menu_bar, FALSE, TRUE, 0);
 	}
 	
@@ -2221,16 +2286,48 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	
 	window_handler->window_fullscreen = FALSE;
 	window_handler->action_bar = gtk_action_bar_new();
+	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->action_bar, FALSE, TRUE, 0);
+	
+	// Stack
+	window_handler->stack = gtk_stack_new();
+	gtk_stack_set_homogeneous(GTK_STACK(window_handler->stack), TRUE);
+	gtk_stack_set_transition_type(GTK_STACK(window_handler->stack), GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
+	gtk_stack_set_transition_duration(GTK_STACK(window_handler->stack), 500);
+	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->stack, TRUE, TRUE, 0);
 	
 	// Notebook.
+	g_printf("[MESSAGE] Creating page \"documents\".\n");
 	window_handler->notebook = gtk_notebook_new();
 	g_signal_connect(window_handler->notebook, "switch-page", G_CALLBACK(notebook_switch_page), window_handler);
-	
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(window_handler->notebook), TRUE);
+	gtk_stack_add_titled(GTK_STACK(window_handler->stack),
+		GTK_WIDGET(window_handler->notebook),
+		"documents",
+		"Documents");
 	
-	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->action_bar, FALSE, TRUE, 0);
-	gtk_box_pack_end(GTK_BOX(window_handler->box), window_handler->notebook, TRUE, TRUE, 0);
+	// Preferences.
+	/*g_printf("[MESSAGE] Creating page \"preferences\".\n");
+	struct cwindow_preferences_handler *window_preferences_handler = alloc_window_preferences_handler(window_handler->application_handler, window_handler->preferences);
+	//gtk_window_set_transient_for(GTK_WINDOW(window_preferences_handler->window), GTK_WINDOW(window_handler->window));
+	window_preferences_handler->main_window_notebook = window_handler->notebook;
+	window_preferences_handler->window_handler = window_handler;
+	window_preferences_handler->update_editor = (update_editorf)update_editor;
+	//gtk_widget_show_all(GTK_WIDGET(window_preferences_handler->page));
 	
+	gtk_stack_add_titled(GTK_STACK(window_handler->stack),
+		GTK_WIDGET(window_preferences_handler->page),
+		"preferences",
+		"Preferences");
+	//gtk_dialog_run(GTK_DIALOG(window_preferences_handler->window));
+	//gtk_widget_destroy(GTK_WIDGET(window_preferences_handler->window));
+	//free(window_preferences_handler);
+	
+	// Stack switcher.
+	g_printf("[MESSAGE] Creating stack switcher.\n");
+	window_handler->stack_switcher = gtk_stack_switcher_new();
+	gtk_stack_switcher_set_stack(GTK_STACK_SWITCHER(window_handler->stack_switcher), GTK_STACK(window_handler->stack));
+	gtk_header_bar_pack_end(GTK_HEADER_BAR(window_handler->header_bar), GTK_WIDGET(window_handler->stack_switcher));
+	*/
 	// Search bar.
 	GtkWidget *search_and_replace_bar = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
 	window_handler->search_and_replace_bar = search_and_replace_bar;
@@ -2260,7 +2357,7 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	GtkWidget *replace_bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	window_handler->replace_bar = replace_bar;
 	window_handler->replace_with_entry = gtk_entry_new();
-	//g_signal_connect(window_handler->search_entry, "key-press-event", G_CALLBACK(entry_search_key_press_event), window_handler);
+	g_signal_connect(window_handler->replace_with_entry, "key-press-event", G_CALLBACK(entry_replace_key_press_event), window_handler);
 	//g_signal_connect(window_handler->search_entry, "key-release-event", G_CALLBACK(entry_search_key_release_event), window_handler);
 	
 	label = gtk_label_new("Replace for:");
@@ -2280,13 +2377,9 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	
 	gtk_box_pack_start(GTK_BOX(window_handler->search_and_replace_bar), GTK_WIDGET(search_bar), FALSE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(window_handler->search_and_replace_bar), GTK_WIDGET(replace_bar), FALSE, TRUE, 0);
-	gtk_action_bar_pack_start(GTK_ACTION_BAR(window_handler->action_bar), search_and_replace_bar);//, TRUE, TRUE, 0);
+	gtk_action_bar_pack_start(GTK_ACTION_BAR(window_handler->action_bar), search_and_replace_bar);
 	
 	gtk_container_add(GTK_CONTAINER(window_handler->window), window_handler->box);
-	
-	window_handler->id_factory = 0;
-	
-	window_handler->preferences = preferences;
 	
 	window_handler->decorated = window_handler->preferences->use_decoration;
 	

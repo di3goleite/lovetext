@@ -47,7 +47,7 @@ THE SOFTWARE.
 #include <lualib.h>
 #include <lauxlib.h>
 
-#define _BUILD_NUMBER_ "200620052015"
+#define _BUILD_NUMBER_ "292026052015"
 #define _PROGRAM_NAME_ "LoveText"
 #define _PROGRAM_YEAR_ "2015"
 #define _PROGRAM_VERSION_ "0.8"
@@ -91,6 +91,7 @@ struct cpreferences
 	// [editor]
 	gboolean show_grid;
 	gboolean show_map;
+	gboolean wrap_lines;
 	gboolean draw_spaces_space;
 	gboolean draw_spaces_tab;
 	gboolean draw_spaces_newline;
@@ -122,6 +123,7 @@ struct capplication_handler {
 	GtkApplication *application;
 	GOptionEntry *option_entries;
 	GApplicationCommandLine *command_line;
+	struct cpreferences *preferences;
 	gchar *GUID;
 	gboolean version;
 	gchar *file_name_input;

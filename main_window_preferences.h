@@ -54,6 +54,7 @@ struct cwindow_preferences_handler
 {
 	struct capplication_handler *application_handler;
 	
+	GtkWidget *page;
 	GtkWidget *window;
 	GtkWidget *stack_sidebar;
 	GtkWidget *stack;

@@ -107,9 +107,9 @@ static gint main_application_handle_local_options(GApplication *application, GVa
 static void main_application_activate(GApplication *application, gpointer user_data)
 {
 	g_printf("[MESSAGE] Program activated.\n");
+	/*
 	struct capplication_handler *application_handler = (struct capplication_handler *)user_data;
-	struct cpreferences *preferences = alloc_preferences();
-	
+	struct cpreferences *preferences = application_handler->preferences;
 	GtkSettings *settings = gtk_settings_get_default();
 	
 	if ((preferences->use_custom_gtk_theme) && (preferences->gtk_theme)) {
@@ -130,7 +130,7 @@ static void main_application_activate(GApplication *application, gpointer user_d
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(window_handler->notebook), preferences->tabs_position);
 	gtk_widget_set_visible(GTK_WIDGET(window_handler->action_bar), preferences->show_action_bar);
 	//gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
-	gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);*/
 }
 
 static void main_application_startup(GApplication *application, gpointer user_data)
@@ -163,6 +163,31 @@ static void main_application_startup(GApplication *application, gpointer user_da
 	g_option_context_set_help_enabled(application_handler->option_context, FALSE);
 	g_option_context_set_summary(application_handler->option_context, _PROGRAM_NAME_ " description.");
 	g_option_context_add_main_entries(application_handler->option_context, option_entries, _PROGRAM_NAME_);
+	
+	struct cpreferences *preferences = alloc_preferences();
+	application_handler->preferences = preferences;
+	GtkSettings *settings = gtk_settings_get_default();
+	
+	if ((preferences->use_custom_gtk_theme) && (preferences->gtk_theme)) {
+		g_printf("[MESSAGE] Setting custom theme.\n");
+		g_object_set(G_OBJECT(settings), "gtk-theme-name", preferences->gtk_theme, NULL);
+	} else {
+		g_printf("[MESSAGE] Setting no custom theme.\n");
+	}
+	
+	struct cwindow_handler *window_handler = alloc_window_handler(application_handler, preferences);
+	gtk_application_set_app_menu(GTK_APPLICATION(application_handler->application), G_MENU_MODEL(window_handler->menu_model));
+	if (gtk_application_prefers_app_menu(GTK_APPLICATION(application_handler->application))) {
+		//gtk_application_set_app_menu(GTK_APPLICATION(application_handler->application), G_MENU_MODEL(window_handler->menu_model));
+	}
+	gtk_application_add_window(GTK_APPLICATION(application_handler->application), GTK_WINDOW(window_handler->window));
+	gtk_window_present(GTK_WINDOW(window_handler->window));
+	gtk_widget_show_all(GTK_WIDGET(window_handler->window));
+	initialize_lua(window_handler, preferences);
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(window_handler->notebook), preferences->tabs_position);
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->action_bar), preferences->show_action_bar);
+	//gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);
 }
 
 static void main_application_shutdown(GApplication *application, gpointer user_data)
