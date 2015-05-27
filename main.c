@@ -33,6 +33,8 @@ THE SOFTWARE.
 #include <gtksourceview/gtksourcestyleschememanager.h>
 #include <gtksourceview/gtksourcelanguagemanager.h>
 #include <gtksourceview/gtksourcelanguage.h>
+#include <glib/gi18n.h>
+#include <locale.h>
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
@@ -43,104 +45,14 @@ THE SOFTWARE.
 #include "main_window_preferences.h"
 #include "module.h"
 
-static gint main_application_command_line_handler(gpointer user_data)
+int main(int argc, char *args[])
 {
-	struct capplication_handler *application_handler = (struct capplication_handler *)user_data;
-	GApplicationCommandLine *command_line = application_handler->command_line;
-	GOptionContext *option_context = application_handler->option_context;
-	GError *error;
-	gint i;
-	gint argc;
-	gchar **args;
-	gchar **argv;
-	args = g_application_command_line_get_arguments(command_line, &argc);
-	argv = g_new (gchar*, argc + 1);
-	for (i = 0; i <= argc; i++) {
-		argv[i] = args[i];
-	}
-	gboolean context_result = FALSE;
-	error = NULL;
-	context_result = g_option_context_parse_strv(option_context, &args, &error);
-	if (context_result) {
-		if (application_handler->help) {
-			// gchar *text;
-			// text = g_option_context_get_help(option_context, FALSE, g_option_context_get_main_group(option_context));
-			// g_print("%s",  text);
-			// g_free (text);
-		}
-		if (application_handler->version) {
-			g_printf("%s version %s.\n", _PROGRAM_NAME_, _PROGRAM_VERSION_);
-			g_printf("Copyright © %s %s. All rights reserved.\n", _PROGRAM_YEAR_, _PROGRAM_AUTHOR_);
-		}
-		
-		if (application_handler->file_name_input) {
-			
-		}
-	}
-	if (error) {
-		printf("[ERROR] Failed to parser arguments.\n");
-	}
-	g_option_context_free(option_context);
-	g_object_unref(command_line);
-	return G_SOURCE_REMOVE;
-}
-
-static gint main_application_command_line(GApplication *application, GApplicationCommandLine *command_line, gpointer user_data)
-{
-	struct capplication_handler *application_handler = (struct capplication_handler *)user_data;
-	g_object_set_data_full(G_OBJECT(command_line), "application", application, (GDestroyNotify)g_application_release);
-	g_object_ref(command_line);
-	application_handler->command_line = command_line;
-	g_idle_add(main_application_command_line_handler, application_handler);
+	GtkApplication *application = gtk_application_new(NULL, 0);
+	g_application_register(G_APPLICATION(application), NULL, NULL);
+	struct capplication_handler *application_handler = alloc_application_handler(application);
+	struct cpreferences *preferences = alloc_preferences();
+	application_handler->preferences = preferences;
 	
-	g_application_activate(application);
-	
-	return 0;
-}
-
-static gint main_application_handle_local_options(GApplication *application, GVariantDict *options, gpointer user_data)
-{
-	//g_printf("[MESSAGE] Handling local options.\n");
-	return -1;
-}
-
-static void main_application_activate(GApplication *application, gpointer user_data)
-{
-	g_printf("[MESSAGE] Program activated.\n");
-	/*
-	struct capplication_handler *application_handler = (struct capplication_handler *)user_data;
-	struct cpreferences *preferences = application_handler->preferences;
-	GtkSettings *settings = gtk_settings_get_default();
-	
-	if ((preferences->use_custom_gtk_theme) && (preferences->gtk_theme)) {
-		g_printf("[MESSAGE] Setting custom theme.\n");
-		g_object_set(G_OBJECT(settings), "gtk-theme-name", preferences->gtk_theme, NULL);
-	} else {
-		g_printf("[MESSAGE] Setting no custom theme.\n");
-	}
-	
-	struct cwindow_handler *window_handler = alloc_window_handler(application_handler, preferences);
-	if (gtk_application_prefers_app_menu(GTK_APPLICATION(application_handler->application))) {
-		gtk_application_set_app_menu(GTK_APPLICATION(application_handler->application), G_MENU_MODEL(window_handler->menu_model));
-	}
-	gtk_application_add_window(GTK_APPLICATION(application_handler->application), GTK_WINDOW(window_handler->window));
-	gtk_window_present(GTK_WINDOW(window_handler->window));
-	gtk_widget_show_all(GTK_WIDGET(window_handler->window));
-	initialize_lua(window_handler, preferences);
-	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(window_handler->notebook), preferences->tabs_position);
-	gtk_widget_set_visible(GTK_WIDGET(window_handler->action_bar), preferences->show_action_bar);
-	//gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
-	gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);*/
-}
-
-static void main_application_startup(GApplication *application, gpointer user_data)
-{
-	g_printf("[MESSAGE] Program startup.\n");
-	struct capplication_handler *application_handler = (struct capplication_handler *)user_data;
-	g_application_hold(application);
-	//GNotification *notification = g_notification_new(_PROGRAM_NAME_ " starting.");
-	//g_notification_set_body(notification, "The program is executing.");
-	//g_application_send_notification(application, NULL, notification);
 	// Handle option context.
 	GOptionEntry option_entries[] = {
 		{ "version",
@@ -148,31 +60,44 @@ static void main_application_startup(GApplication *application, gpointer user_da
 			0,
 			G_OPTION_ARG_NONE,
 			&application_handler->version,
-			"\n\t\t\t\tShow the version of the program.", NULL},
-		{ "file",
-			'i',
+			"Show the version of the program.", NULL},
+		{ G_OPTION_REMAINING,
+			'\0',
 			0,
-			G_OPTION_ARG_STRING,
-			&application_handler->file_name_input,
-			"\n\t\t\t\tSet the input file.", NULL},
+			G_OPTION_ARG_FILENAME_ARRAY,
+			&application_handler->file_name,
+			"A file containing a matrix for sequence alignment.", NULL},
+		{ "help",
+			'h',
+			0,
+			G_OPTION_ARG_NONE,
+			&application_handler->help,
+			"Show this help description.", NULL},
 		{NULL}
 	};
-	
-	g_application_add_main_option_entries(application, option_entries);
-	application_handler->option_context = g_option_context_new(_PROGRAM_NAME_);
-	g_option_context_set_help_enabled(application_handler->option_context, FALSE);
-	g_option_context_set_summary(application_handler->option_context, _PROGRAM_NAME_ " description.");
 	g_option_context_add_main_entries(application_handler->option_context, option_entries, _PROGRAM_NAME_);
+	g_option_context_set_help_enabled(application_handler->option_context, TRUE);
+	g_option_context_set_ignore_unknown_options(application_handler->option_context, TRUE);
+	// Parse options.
+	GError *error = NULL;
+	gboolean context_result = FALSE;
+	context_result = g_option_context_parse(application_handler->option_context,
+		&argc,
+		&args,
+		&error);
+	if (context_result) {
+		if (application_handler->version) {
+			g_printf("%s version %s.\n", _PROGRAM_NAME_, _PROGRAM_VERSION_);
+			g_printf("Copyright © %s %s. All rights reserved.\n", _PROGRAM_YEAR_, _PROGRAM_AUTHOR_);
+		}
+	} else if (error) {
+		printf("EE Failed to parser arguments.\n");
+	}
+	g_option_context_free(application_handler->option_context);
 	
-	struct cpreferences *preferences = alloc_preferences();
-	application_handler->preferences = preferences;
 	GtkSettings *settings = gtk_settings_get_default();
-	
 	if ((preferences->use_custom_gtk_theme) && (preferences->gtk_theme)) {
-		g_printf("[MESSAGE] Setting custom theme.\n");
 		g_object_set(G_OBJECT(settings), "gtk-theme-name", preferences->gtk_theme, NULL);
-	} else {
-		g_printf("[MESSAGE] Setting no custom theme.\n");
 	}
 	
 	struct cwindow_handler *window_handler = alloc_window_handler(application_handler, preferences);
@@ -188,34 +113,29 @@ static void main_application_startup(GApplication *application, gpointer user_da
 	gtk_widget_set_visible(GTK_WIDGET(window_handler->action_bar), preferences->show_action_bar);
 	//gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
 	gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);
-}
-
-static void main_application_shutdown(GApplication *application, gpointer user_data)
-{
-	//GNotification *notification = g_notification_new(_PROGRAM_NAME_ " terminating.");
-	//g_notification_set_body(notification, "The program has no more tasks.");
-	//g_application_send_notification(application, NULL, notification);
-}
-
-int main(int argc, char *args[])
-{
-	GtkApplication *application = gtk_application_new(_PROGRAM_NAME_".instance", G_APPLICATION_FLAGS_NONE | G_APPLICATION_HANDLES_COMMAND_LINE | G_APPLICATION_NON_UNIQUE);
-	struct capplication_handler *application_handler = alloc_application_handler();
-	application_handler->application = application;
-	application_handler->GUID = g_dbus_generate_guid();
-	g_signal_connect(application, "activate", G_CALLBACK(main_application_activate), application_handler);
-	g_signal_connect(application, "startup", G_CALLBACK(main_application_startup), application_handler);
-	g_signal_connect(application, "shutdown", G_CALLBACK(main_application_shutdown), application_handler);
-	g_signal_connect(application, "command-line", G_CALLBACK(main_application_command_line), application_handler);
-	g_signal_connect(application, "handle-local-options", G_CALLBACK(main_application_handle_local_options), application_handler);
 	
-	//gtk_main();
-	g_application_run(G_APPLICATION(application), argc, args);
-	g_printf("[MESSAGE] Terminating application.\n");
-	g_object_unref(application);
-	g_printf("[MESSAGE] Closing Lua state.\n");
+	if (application_handler->file_name) {
+		gint i = 0;
+		while (application_handler->file_name[i]) {
+			g_printf("MM Open file \"%s\".\n", application_handler->file_name[i]);
+			FILE *file = fopen(application_handler->file_name[i], "r");
+			fseek(file, 0, SEEK_END);
+			int size = ftell(file);
+			char *text = (char *)malloc(sizeof(char) * size + 1);
+			memset(text, 0, sizeof(char) * size + 1);
+			fseek(file, 0, SEEK_SET);
+			fread(text, sizeof(char), size, file);
+
+			create_page(window_handler, application_handler->file_name[i], text);
+			fclose(file);
+			i++;
+		}
+	}
+	update_editor(window_handler);
+	
+	gtk_main();
+	g_printf("MM Closing Lua state.\n");
 	lua_close(application_handler->lua);
-	g_printf("[MESSAGE] Done.\n");
 	
 	return 0;
 }

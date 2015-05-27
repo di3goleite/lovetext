@@ -47,7 +47,7 @@ THE SOFTWARE.
 #include <lualib.h>
 #include <lauxlib.h>
 
-#define _BUILD_NUMBER_ "292026052015"
+#define _BUILD_NUMBER_ "301427052015"
 #define _PROGRAM_NAME_ "LoveText"
 #define _PROGRAM_YEAR_ "2015"
 #define _PROGRAM_VERSION_ "0.8"
@@ -126,8 +126,7 @@ struct capplication_handler {
 	struct cpreferences *preferences;
 	gchar *GUID;
 	gboolean version;
-	gchar *file_name_input;
-	
+	gchar **file_name;
 	GMenu *menu_model;
 	
 	lua_State* lua;
@@ -138,9 +137,9 @@ struct capplication_handler {
 	gint argc;
 };
 
-struct capplication_handler *alloc_application_handler(void);
+struct capplication_handler *alloc_application_handler(GtkApplication *application);
 
-struct cpreferences *alloc_preferences();
+struct cpreferences *alloc_preferences(void);
 
 #endif
 
