@@ -48,7 +48,7 @@ THE SOFTWARE.
 static gboolean check_button_use_decoration_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->use_decoration = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->use_decoration = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -56,7 +56,7 @@ static gboolean check_button_use_decoration_toggled(GtkWidget *widget, gpointer 
 static gboolean check_button_show_menu_bar_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_menu_bar = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->show_menu_bar = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -64,7 +64,7 @@ static gboolean check_button_show_menu_bar_toggled(GtkWidget *widget, gpointer u
 static gboolean check_button_show_action_bar_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_action_bar = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->show_action_bar = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -72,7 +72,7 @@ static gboolean check_button_show_action_bar_toggled(GtkWidget *widget, gpointer
 static gboolean check_button_use_custom_gtk_theme_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->use_custom_gtk_theme = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->use_custom_gtk_theme = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -85,22 +85,22 @@ static void combo_box_tab_position_changed(GtkWidget *widget, gpointer user_data
 	if (index > -1) {
 		gtk_notebook_set_tab_pos(GTK_NOTEBOOK(window_preferences_handler->main_window_notebook), index);
 	}
-	window_preferences_handler->preferences->tabs_position = gtk_notebook_get_tab_pos(GTK_NOTEBOOK(window_preferences_handler->main_window_notebook));
+	window_preferences_handler->application_handler->tabs_position = gtk_notebook_get_tab_pos(GTK_NOTEBOOK(window_preferences_handler->main_window_notebook));
 }
 
 static gboolean entry_custom_gtk_theme_key_press_event(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
 	
-	if (window_preferences_handler->preferences->gtk_theme) {
-		g_free(window_preferences_handler->preferences->gtk_theme);
+	if (window_preferences_handler->application_handler->gtk_theme) {
+		g_free(window_preferences_handler->application_handler->gtk_theme);
 	}
 	
 	const gchar *text = gtk_entry_get_text(GTK_ENTRY(widget));
 	
 	if (text) {
-		window_preferences_handler->preferences->gtk_theme = g_strdup(text);
-		g_printf("Theme: %s.\n", window_preferences_handler->preferences->gtk_theme);
+		window_preferences_handler->application_handler->gtk_theme = g_strdup(text);
+		g_printf("Theme: %s.\n", window_preferences_handler->application_handler->gtk_theme);
 	}
 	return FALSE;
 }
@@ -109,7 +109,7 @@ static gboolean entry_custom_gtk_theme_key_press_event(GtkWidget *widget, GdkEve
 static gboolean check_button_draw_spaces_leading_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_leading = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->draw_spaces_leading = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -117,7 +117,7 @@ static gboolean check_button_draw_spaces_leading_toggled(GtkWidget *widget, gpoi
 static gboolean check_button_draw_spaces_line_break_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_newline = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->draw_spaces_newline = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -125,7 +125,7 @@ static gboolean check_button_draw_spaces_line_break_toggled(GtkWidget *widget, g
 static gboolean check_button_draw_spaces_nbsp_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_nbsp = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->draw_spaces_nbsp = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -133,7 +133,7 @@ static gboolean check_button_draw_spaces_nbsp_toggled(GtkWidget *widget, gpointe
 static gboolean check_button_draw_spaces_space_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_space = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->draw_spaces_space = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -141,7 +141,7 @@ static gboolean check_button_draw_spaces_space_toggled(GtkWidget *widget, gpoint
 static gboolean check_button_draw_spaces_text_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_text = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->draw_spaces_text = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -149,7 +149,7 @@ static gboolean check_button_draw_spaces_text_toggled(GtkWidget *widget, gpointe
 static gboolean check_button_draw_spaces_trailing_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_trailing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->draw_spaces_trailing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -157,7 +157,7 @@ static gboolean check_button_draw_spaces_trailing_toggled(GtkWidget *widget, gpo
 static gboolean check_button_draw_spaces_tab_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->draw_spaces_tab = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->draw_spaces_tab = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -165,7 +165,7 @@ static gboolean check_button_draw_spaces_tab_toggled(GtkWidget *widget, gpointer
 static gboolean check_button_highlight_current_line_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->highlight_current_line = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->highlight_current_line = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -173,7 +173,7 @@ static gboolean check_button_highlight_current_line_toggled(GtkWidget *widget, g
 static gboolean check_button_highlight_matching_brackets_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->highlight_matching_brackets = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->highlight_matching_brackets = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -181,7 +181,7 @@ static gboolean check_button_highlight_matching_brackets_toggled(GtkWidget *widg
 static gboolean check_button_show_grid_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_grid = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->show_grid = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -189,7 +189,7 @@ static gboolean check_button_show_grid_toggled(GtkWidget *widget, gpointer user_
 static gboolean check_button_wrap_lines_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->wrap_lines = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->wrap_lines = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -197,7 +197,7 @@ static gboolean check_button_wrap_lines_toggled(GtkWidget *widget, gpointer user
 static gboolean check_button_show_map_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_map = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->show_map = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -205,7 +205,7 @@ static gboolean check_button_show_map_toggled(GtkWidget *widget, gpointer user_d
 static gboolean check_button_show_line_numbers_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_line_numbers = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->show_line_numbers = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -213,7 +213,7 @@ static gboolean check_button_show_line_numbers_toggled(GtkWidget *widget, gpoint
 static gboolean check_button_show_right_margin_toggled(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->show_right_margin = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	window_preferences_handler->application_handler->show_right_margin = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 	return FALSE;
 }
@@ -221,14 +221,14 @@ static gboolean check_button_show_right_margin_toggled(GtkWidget *widget, gpoint
 static void spin_button_right_margin_position_value_changed(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->right_margin_position = gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget));
+	window_preferences_handler->application_handler->right_margin_position = gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
 static void button_font_font_set(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
-	window_preferences_handler->preferences->editor_font = g_string_assign(window_preferences_handler->preferences->editor_font,
+	window_preferences_handler->application_handler->editor_font = g_string_assign(window_preferences_handler->application_handler->editor_font,
 		gtk_font_button_get_font_name(GTK_FONT_BUTTON(widget)));
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
@@ -244,9 +244,9 @@ static void tree_view_schemes_row_activated(GtkTreeView *tree_view, GtkTreePath 
 		gchar *id = NULL;
 		gtk_tree_model_get(tree_model, &iter, _COLUMN_ID_, &id, -1);
 		if (id) {
-			GtkSourceStyleScheme *scheme = gtk_source_style_scheme_manager_get_scheme(window_preferences_handler->preferences->style_scheme_manager, id);
+			GtkSourceStyleScheme *scheme = gtk_source_style_scheme_manager_get_scheme(window_preferences_handler->application_handler->style_scheme_manager, id);
 			if (scheme) {
-				window_preferences_handler->preferences->scheme = scheme;
+				window_preferences_handler->application_handler->scheme = scheme;
 				gtk_tree_model_get(tree_model, &iter, _COLUMN_ID_, &id, -1);
 				
 				GtkTreeIter child_iter;
@@ -260,20 +260,38 @@ static void tree_view_schemes_row_activated(GtkTreeView *tree_view, GtkTreePath 
 	window_preferences_handler->update_editor(window_preferences_handler->window_handler);
 }
 
-struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capplication_handler *application_handler, struct cpreferences *preferences)
+static void list_box_preferences_row_activated(GtkListBox *list_box, GtkListBoxRow *row, gpointer user_data)
+{
+	struct cwindow_preferences_handler *window_preferences_handler = (struct cwindow_preferences_handler *)user_data;
+	g_printf("MM Change page.\n");
+	gint index = gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
+	
+	if (index == 0) {
+		gtk_stack_set_visible_child_name(GTK_STACK(window_preferences_handler->stack), "general");
+	}
+	if (index == 1) {
+		gtk_stack_set_visible_child_name(GTK_STACK(window_preferences_handler->stack), "editor");
+	}
+	if (index == 2) {
+		gtk_stack_set_visible_child_name(GTK_STACK(window_preferences_handler->stack), "plugins");
+	}
+	if (index == 3) {
+		gtk_stack_set_visible_child_name(GTK_STACK(window_preferences_handler->stack), "keybindings");
+	}
+	
+}
+
+struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capplication_handler *application_handler)
 {
 	g_printf("[MESSAGE] Creating preferences window.\n");
 	struct cwindow_preferences_handler *window_preferences_handler = malloc(sizeof(struct cwindow_preferences_handler));
 	window_preferences_handler->application_handler = application_handler;
-	window_preferences_handler->preferences = preferences;
 	window_preferences_handler->window = gtk_dialog_new_with_buttons("Preferences",
 		NULL,
 		GTK_DIALOG_USE_HEADER_BAR | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
 		"Close",
 		GTK_RESPONSE_CANCEL,
 		NULL);
-	
-	//gtk_widget_set_size_request(GTK_WIDGET(window_preferences_handler->window), 480, 480);
 	
 	// Get content area.
 	GtkWidget *box_content = gtk_dialog_get_content_area(GTK_DIALOG(window_preferences_handler->window));
@@ -295,8 +313,67 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 		0);
 	gtk_widget_set_size_request(GTK_WIDGET(scrolled_window), 160, -1);
 	
-	window_preferences_handler->stack_sidebar = gtk_stack_sidebar_new();
-	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(window_preferences_handler->stack_sidebar));
+	// List box project.
+	GtkWidget *list_box = gtk_list_box_new();
+	g_signal_connect(list_box, "row-activated", G_CALLBACK(list_box_preferences_row_activated), window_preferences_handler);
+	gtk_widget_set_size_request(GTK_WIDGET(list_box), 160, -1);
+	gtk_list_box_set_activate_on_single_click(GTK_LIST_BOX(list_box), TRUE);
+	gtk_list_box_set_selection_mode(GTK_LIST_BOX(list_box), GTK_SELECTION_SINGLE);
+	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(list_box));
+	
+	GtkWidget *image_icon = NULL;
+	GtkWidget *label = NULL;
+	GtkWidget *box = NULL;
+	
+	label = gtk_label_new("General");
+	image_icon = gtk_image_new_from_icon_name("view-grid-symbolic", GTK_ICON_SIZE_DND);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>General</b>");
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_CENTER);
+	gtk_widget_set_valign(GTK_WIDGET(label), GTK_ALIGN_START);
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(image_icon), FALSE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label), TRUE, TRUE, 0);
+	gtk_list_box_insert(GTK_LIST_BOX(list_box), GTK_WIDGET(box), -1);
+	GtkListBoxRow *list_box_row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(list_box), 0);
+	gtk_list_box_select_row(GTK_LIST_BOX(list_box), list_box_row);
+	
+	label = gtk_label_new("Editor");
+	image_icon = gtk_image_new_from_icon_name("accessories-text-editor-symbolic", GTK_ICON_SIZE_DND);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Editor</b>");
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_CENTER);
+	gtk_widget_set_valign(GTK_WIDGET(label), GTK_ALIGN_START);
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(image_icon), FALSE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label), TRUE, TRUE, 0);
+	gtk_list_box_insert(GTK_LIST_BOX(list_box), GTK_WIDGET(box), -1);
+	
+	label = gtk_label_new("Plugins");
+	image_icon = gtk_image_new_from_icon_name("view-list-symbolic", GTK_ICON_SIZE_DND);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Plugins</b>");
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_CENTER);
+	gtk_widget_set_valign(GTK_WIDGET(label), GTK_ALIGN_START);
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(image_icon), FALSE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label), TRUE, TRUE, 0);
+	gtk_list_box_insert(GTK_LIST_BOX(list_box), GTK_WIDGET(box), -1);
+	
+	label = gtk_label_new("Keybindings");
+	image_icon = gtk_image_new_from_icon_name("input-keyboard-symbolic", GTK_ICON_SIZE_DND);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), "<b>Keybindings</b>");
+	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_CENTER);
+	gtk_widget_set_valign(GTK_WIDGET(label), GTK_ALIGN_START);
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(image_icon), FALSE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label), TRUE, TRUE, 0);
+	gtk_list_box_insert(GTK_LIST_BOX(list_box), GTK_WIDGET(box), -1);
 	
 	// Stack.
 	g_printf("[MESSAGE] Create stack.\n");
@@ -308,30 +385,28 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 		TRUE,
 		TRUE,
 		0);
-	gtk_stack_sidebar_set_stack(GTK_STACK_SIDEBAR(window_preferences_handler->stack_sidebar),
-		GTK_STACK(window_preferences_handler->stack));
 	
 	// Pages.
 	GtkWidget *box_page = NULL;
 	GtkWidget *widget = NULL;
-	GtkWidget *label = NULL;
+	label = NULL;
+	
 	// Page general.
 	g_printf("[MESSAGE] Create page \"general\".\n");
 	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
 		GTK_POLICY_NEVER,
 		GTK_POLICY_AUTOMATIC);
-	gtk_stack_add_titled(GTK_STACK(window_preferences_handler->stack),
+	gtk_stack_add_named(GTK_STACK(window_preferences_handler->stack),
 		GTK_WIDGET(scrolled_window),
-		"general",
-		"General");
+		"general");
 	box_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(box_page));
 	
 	// Option decoration.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->use_decoration);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->use_decoration);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_use_decoration_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -347,7 +422,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option show menu bar.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_menu_bar);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->show_menu_bar);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_menu_bar_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -363,7 +438,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option show action bar.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_action_bar);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->show_action_bar);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_action_bar_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -379,7 +454,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option use custom gtk theme.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->use_custom_gtk_theme);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->use_custom_gtk_theme);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_use_custom_gtk_theme_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -394,7 +469,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	
 	widget = gtk_entry_new();
 	gtk_widget_set_margin_top(GTK_WIDGET(widget), 2);
-	gtk_entry_set_text(GTK_ENTRY(widget), preferences->gtk_theme);
+	gtk_entry_set_text(GTK_ENTRY(widget), application_handler->gtk_theme);
 	g_signal_connect(widget, "key-press-event", G_CALLBACK(entry_custom_gtk_theme_key_press_event), window_preferences_handler);
 	g_signal_connect(widget, "key-release-event", G_CALLBACK(entry_custom_gtk_theme_key_press_event), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, TRUE, 0);
@@ -414,7 +489,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(widget), "right", "Right");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(widget), "top", "Top");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(widget), "bottom", "Bottom");
-	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), preferences->tabs_position);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), application_handler->tabs_position);
 	g_signal_connect(widget, "changed", G_CALLBACK(combo_box_tab_position_changed), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page), widget, FALSE, FALSE, 0);
 	
@@ -424,17 +499,16 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
 		GTK_POLICY_NEVER,
 		GTK_POLICY_AUTOMATIC);
-	gtk_stack_add_titled(GTK_STACK(window_preferences_handler->stack),
+	gtk_stack_add_named(GTK_STACK(window_preferences_handler->stack),
 		GTK_WIDGET(scrolled_window),
-		"editor",
-		"Editor");
+		"editor");
 	box_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(box_page));
 	
 	// Option show line numbers.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_line_numbers);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->show_line_numbers);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_line_numbers_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -450,7 +524,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option highlight current line.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->highlight_current_line);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->highlight_current_line);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_highlight_current_line_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -466,7 +540,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option highlight matching brackets.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->highlight_matching_brackets);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->highlight_matching_brackets);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_highlight_matching_brackets_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -482,7 +556,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option show grid.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_grid);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->show_grid);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_grid_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -498,7 +572,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option wrap lines.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->wrap_lines);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->wrap_lines);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_wrap_lines_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -514,7 +588,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option show right margin.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_right_margin);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->show_right_margin);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_right_margin_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -530,7 +604,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option show overview map.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->show_map);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->show_map);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_show_map_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -554,7 +628,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option draw space character.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_space);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->draw_spaces_space);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_space_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -570,7 +644,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option draw tab character.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_tab);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->draw_spaces_tab);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_tab_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -586,7 +660,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option draw line break character.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_newline);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->draw_spaces_newline);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_line_break_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -602,7 +676,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option draw non-breaking whitespace character.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_nbsp);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->draw_spaces_nbsp);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_nbsp_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -618,7 +692,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option draw leading whitespace character.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_leading);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->draw_spaces_leading);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_leading_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -634,7 +708,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option draw whitespace inside text.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_text);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->draw_spaces_text);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_text_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -650,7 +724,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	// Option draw trailing whitespace text.
 	widget = gtk_check_button_new();
 	gtk_widget_set_valign(GTK_WIDGET(widget), GTK_ALIGN_START);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), preferences->draw_spaces_trailing);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), application_handler->draw_spaces_trailing);
 	g_signal_connect(widget, "toggled", G_CALLBACK(check_button_draw_spaces_trailing_toggled), window_preferences_handler);
 	gtk_box_pack_start(GTK_BOX(box_page),
 		GTK_WIDGET(widget),
@@ -672,7 +746,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_START);
 	
 	widget = gtk_font_button_new();
-	gtk_font_button_set_font_name(GTK_FONT_BUTTON(widget), preferences->editor_font->str);
+	gtk_font_button_set_font_name(GTK_FONT_BUTTON(widget), application_handler->editor_font->str);
 	g_signal_connect(widget, "font-set", G_CALLBACK(button_font_font_set), window_preferences_handler);
 	gtk_widget_set_margin_top(GTK_WIDGET(widget), 2);
 	gtk_box_pack_start(GTK_BOX(box_page), GTK_WIDGET(widget), FALSE, FALSE, 0);
@@ -686,7 +760,7 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_widget_set_halign(GTK_WIDGET(label), GTK_ALIGN_START);
 	
 	widget = gtk_spin_button_new_with_range(1, 800, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), preferences->right_margin_position);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), application_handler->right_margin_position);
 	g_signal_connect(widget, "value-changed", G_CALLBACK(spin_button_right_margin_position_value_changed), window_preferences_handler);
 	gtk_widget_set_margin_top(GTK_WIDGET(widget), 2);
 	gtk_box_pack_start(GTK_BOX(box_page), GTK_WIDGET(widget), FALSE, TRUE, 0);
@@ -730,10 +804,10 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_tree_view_column_pack_start(column, cell_renderer, TRUE);
 	gtk_tree_view_column_add_attribute(column, cell_renderer, "text", _COLUMN_SCHEME_);
 	
-	gchar **idp = (gchar **)preferences->scheme_ids;
+	gchar **idp = (gchar **)application_handler->scheme_ids;
 	gchar *id = *idp;
 	while (id != NULL) {
-		GtkSourceStyleScheme *scheme = gtk_source_style_scheme_manager_get_scheme(preferences->style_scheme_manager, id);
+		GtkSourceStyleScheme *scheme = gtk_source_style_scheme_manager_get_scheme(application_handler->style_scheme_manager, id);
 		const gchar *name = gtk_source_style_scheme_get_name(scheme);
 		
 		GtkTreeIter iter;
@@ -758,10 +832,9 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
 		GTK_POLICY_NEVER,
 		GTK_POLICY_AUTOMATIC);
-	gtk_stack_add_titled(GTK_STACK(window_preferences_handler->stack),
+	gtk_stack_add_named(GTK_STACK(window_preferences_handler->stack),
 		GTK_WIDGET(scrolled_window),
-		"plugins",
-		"Plugins");
+		"plugins");
 	box_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(box_page));
 	
@@ -793,13 +866,20 @@ struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capp
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
 		GTK_POLICY_NEVER,
 		GTK_POLICY_AUTOMATIC);
-	gtk_stack_add_titled(GTK_STACK(window_preferences_handler->stack),
+	gtk_stack_add_named(GTK_STACK(window_preferences_handler->stack),
 		GTK_WIDGET(scrolled_window),
-		"keybindings",
-		"Keybindings");
+		"keybindings");
 	box_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(box_page));
 	
+	label = gtk_label_new("Search keybindings:");
+	gtk_box_pack_start(GTK_BOX(box_page), GTK_WIDGET(label), FALSE, TRUE, 0);
+	
+	widget = gtk_search_entry_new();
+	gtk_widget_set_margin_top(GTK_WIDGET(widget), 2);
+	gtk_box_pack_start(GTK_BOX(box_page), GTK_WIDGET(widget), FALSE, TRUE, 0);
+	
+	gtk_widget_show_all(GTK_WIDGET(box_page));
 	g_printf("[MESSAGE] Preferences window created.\n");
 	return window_preferences_handler;
 }

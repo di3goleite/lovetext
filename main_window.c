@@ -36,9 +36,6 @@ THE SOFTWARE.
 #include <gdk/gdkkeysyms.h>
 #include <glib/gi18n.h>
 #include <locale.h>
-#include <X11/X.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #include <gtksourceview/gtksource.h>
 #include <gtksourceview/gtksourceview.h>
 #include <gtksourceview/gtksourcebuffer.h>
@@ -56,11 +53,6 @@ THE SOFTWARE.
 #include "main_window_preferences.h"
 #include "module.h"
 
-#define _COLUMN_TEXT_ 0
-#define _COLUMN_KEY_ 1
-#define _COLUMN_ALIAS_ 2
-#define _COLUMN_DESCRIPTION_ 3
-
 static void update_page_language(struct cwindow_handler *window_handler, struct cbuffer_ref *buffer_ref)
 {
 	GtkSourceBuffer *source_buffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)));
@@ -74,7 +66,7 @@ static void update_page_language(struct cwindow_handler *window_handler, struct 
 	}
 	language = NULL;
 	if ((buffer_ref->file_name->str) && (content_type)) {
-		language = gtk_source_language_manager_guess_language(window_handler->preferences->language_manager,
+		language = gtk_source_language_manager_guess_language(window_handler->application_handler->language_manager,
 			buffer_ref->file_name->str, content_type);
 	}
 	
@@ -87,30 +79,30 @@ static void update_page_language(struct cwindow_handler *window_handler, struct 
 static void update_views(struct cwindow_handler *window_handler)
 {
 	g_printf("MM Updating text editor schemes.\n");
-	struct cpreferences *preferences = window_handler->preferences;
+	struct capplication_handler *application_handler = window_handler->application_handler;
 	gint pages_count = gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook));
 	gint i = 0;
 	
 	GtkSourceDrawSpacesFlags draw_spaces_flag = 0;
-	if (preferences->draw_spaces_space) {
+	if (application_handler->draw_spaces_space) {
 		draw_spaces_flag |= GTK_SOURCE_DRAW_SPACES_SPACE;
 	}
-	if (preferences->draw_spaces_tab) {
+	if (application_handler->draw_spaces_tab) {
 		draw_spaces_flag |= GTK_SOURCE_DRAW_SPACES_TAB;
 	}
-	if (preferences->draw_spaces_nbsp) {
+	if (application_handler->draw_spaces_nbsp) {
 		draw_spaces_flag |= GTK_SOURCE_DRAW_SPACES_NBSP;
 	}
-	if (preferences->draw_spaces_newline) {
+	if (application_handler->draw_spaces_newline) {
 		draw_spaces_flag |= GTK_SOURCE_DRAW_SPACES_NEWLINE;
 	}
-	if (preferences->draw_spaces_text) {
+	if (application_handler->draw_spaces_text) {
 		draw_spaces_flag |= GTK_SOURCE_DRAW_SPACES_TEXT;
 	}
-	if (preferences->draw_spaces_leading) {
+	if (application_handler->draw_spaces_leading) {
 		draw_spaces_flag |= GTK_SOURCE_DRAW_SPACES_NBSP;
 	}
-	if (preferences->draw_spaces_trailing) {
+	if (application_handler->draw_spaces_trailing) {
 		draw_spaces_flag |= GTK_SOURCE_DRAW_SPACES_TRAILING;
 	}
 	
@@ -121,40 +113,40 @@ static void update_views(struct cwindow_handler *window_handler)
 		buffer_ref = g_object_get_data(G_OBJECT(widget_page), "buffer_ref");
 		if (buffer_ref) {
 			GtkSourceBuffer *source_buffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)));
-			gtk_source_view_set_background_pattern(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_grid);
+			gtk_source_view_set_background_pattern(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->show_grid);
 			gtk_source_view_set_draw_spaces(GTK_SOURCE_VIEW(buffer_ref->source_view), draw_spaces_flag);
-			gtk_text_view_set_right_margin(GTK_TEXT_VIEW(buffer_ref->source_view), preferences->show_right_margin);
-			gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(buffer_ref->source_view), preferences->wrap_mode);
-			gtk_source_view_set_right_margin_position(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->right_margin_position);
-			gtk_source_view_set_show_line_marks(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_line_marks);
-			gtk_source_view_set_show_line_numbers(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_line_numbers);
-			gtk_source_view_set_show_right_margin(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_right_margin);
-			gtk_source_view_set_tab_width(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->tab_width);
-			gtk_source_view_set_auto_indent(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->auto_indent);
-			gtk_source_buffer_set_highlight_matching_brackets(GTK_SOURCE_BUFFER(source_buffer), preferences->highlight_matching_brackets);
-			gtk_source_view_set_highlight_current_line(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->highlight_current_line);
+			gtk_text_view_set_right_margin(GTK_TEXT_VIEW(buffer_ref->source_view), application_handler->show_right_margin);
+			gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(buffer_ref->source_view), application_handler->wrap_mode);
+			gtk_source_view_set_right_margin_position(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->right_margin_position);
+			gtk_source_view_set_show_line_marks(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->show_line_marks);
+			gtk_source_view_set_show_line_numbers(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->show_line_numbers);
+			gtk_source_view_set_show_right_margin(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->show_right_margin);
+			gtk_source_view_set_tab_width(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->tab_width);
+			gtk_source_view_set_auto_indent(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->auto_indent);
+			gtk_source_buffer_set_highlight_matching_brackets(GTK_SOURCE_BUFFER(source_buffer), application_handler->highlight_matching_brackets);
+			gtk_source_view_set_highlight_current_line(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->highlight_current_line);
 			gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(buffer_ref->source_view), GTK_WRAP_NONE);
-			if (preferences->wrap_lines) {
+			if (application_handler->wrap_lines) {
 				gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(buffer_ref->source_view), GTK_WRAP_CHAR);
 			}
-			if (window_handler->preferences->scheme) {
+			if (window_handler->application_handler->scheme) {
 				const gchar *scheme_id = NULL;
 				
-				if (window_handler->preferences->scheme) {
-					scheme_id = gtk_source_style_scheme_get_id(window_handler->preferences->scheme);
+				if (window_handler->application_handler->scheme) {
+					scheme_id = gtk_source_style_scheme_get_id(window_handler->application_handler->scheme);
 				}
 				if (scheme_id) {
 					g_printf("MM Scheme \"%s\" set at page %i.\n", scheme_id, i);
 				} else {
 					g_printf("MM Scheme set at page %i.\n", i);
 				}
-				gtk_source_buffer_set_style_scheme(source_buffer, window_handler->preferences->scheme);
+				gtk_source_buffer_set_style_scheme(source_buffer, window_handler->application_handler->scheme);
 				
 				GtkStyleContext *style_context = gtk_widget_get_style_context(GTK_WIDGET(buffer_ref->source_view));
 				GtkCssProvider *css_provider = gtk_css_provider_new();
 				
 				GString *css_string = g_string_new("GtkSourceView { font: ");
-				css_string = g_string_append(css_string, preferences->editor_font->str);
+				css_string = g_string_append(css_string, application_handler->editor_font->str);
 				css_string = g_string_append(css_string, ";}");
 				
 				gtk_css_provider_load_from_data(css_provider,
@@ -204,9 +196,9 @@ static void update_providers(struct cwindow_handler *window_handler)
 
 void update_editor(struct cwindow_handler *window_handler)
 {
-	struct cpreferences *preferences = window_handler->preferences;
+	struct capplication_handler *application_handler = window_handler->application_handler;
 	g_printf("MM Action bar visible.\n");
-	if (preferences->show_action_bar) {
+	if (application_handler->show_action_bar) {
 		gtk_widget_show(GTK_WIDGET(window_handler->action_bar));
 	} else {
 		gtk_widget_hide(GTK_WIDGET(window_handler->action_bar));
@@ -214,14 +206,14 @@ void update_editor(struct cwindow_handler *window_handler)
 	g_printf("MM Decoration.\n");
 	if (window_handler->decorated) {
 	} else {
-		if (preferences->show_menu_bar) {
+		if (application_handler->show_menu_bar) {
 			gtk_widget_show(GTK_WIDGET(window_handler->menu_bar));
 		} else {
 			gtk_widget_hide(GTK_WIDGET(window_handler->menu_bar));
 		}
 	}
 	g_printf("MM Tabs position.\n");
-	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(window_handler->notebook), preferences->tabs_position);
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(window_handler->notebook), application_handler->tabs_position);
 	update_views(window_handler);
 	update_providers(window_handler);
 	g_printf("MM Done.\n");
@@ -256,7 +248,7 @@ static void action_open_activate(GSimpleAction *simple, GVariant *parameter, gpo
 		NULL);
 	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(file_chooser), TRUE);
 	gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(file_chooser), TRUE);
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(file_chooser), window_handler->preferences->last_path->str);
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(file_chooser), window_handler->application_handler->last_path->str);
 	
 	g_printf("MM Running dialog window.\n");
 	if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
@@ -350,7 +342,7 @@ static void action_save_activate(GSimpleAction *simple, GVariant *parameter, gpo
 					GTK_RESPONSE_ACCEPT,
 					NULL);
 				gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(file_chooser), TRUE);
-				gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(file_chooser), window_handler->preferences->last_path->str);
+				gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(file_chooser), window_handler->application_handler->last_path->str);
 				if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
 					gchar *file_name = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
 					FILE *file = fopen(file_name, "w");
@@ -425,7 +417,7 @@ static void action_save_as_activate(GSimpleAction *simple, GVariant *parameter, 
 				GTK_RESPONSE_ACCEPT,
 				NULL);
 			gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(file_chooser), TRUE);
-			gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(file_chooser), window_handler->preferences->last_path->str);
+			gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(file_chooser), window_handler->application_handler->last_path->str);
 			if (gtk_dialog_run(GTK_DIALOG(file_chooser)) == GTK_RESPONSE_ACCEPT) {
 				gchar *file_name = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(file_chooser));
 				FILE *file = fopen(file_name, "w");
@@ -522,7 +514,7 @@ static void action_preferences_activate(GSimpleAction *simple, GVariant *paramet
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	
 	// Preferences window.
-	struct cwindow_preferences_handler *window_preferences_handler = alloc_window_preferences_handler(window_handler->application_handler, window_handler->preferences);
+	struct cwindow_preferences_handler *window_preferences_handler = alloc_window_preferences_handler(window_handler->application_handler);
 	gtk_window_set_transient_for(GTK_WINDOW(window_preferences_handler->window), GTK_WINDOW(window_handler->window));
 	window_preferences_handler->main_window_notebook = window_handler->notebook;
 	window_preferences_handler->window_handler = window_handler;
@@ -531,6 +523,11 @@ static void action_preferences_activate(GSimpleAction *simple, GVariant *paramet
 	gtk_dialog_run(GTK_DIALOG(window_preferences_handler->window));
 	gtk_widget_destroy(GTK_WIDGET(window_preferences_handler->window));
 	free(window_preferences_handler);
+}
+
+static void button_preferences_clicked(GtkWidget *widget, gpointer user_data)
+{
+	action_preferences_activate(NULL, NULL, user_data);
 }
 
 static void action_close_activate(GSimpleAction *simple, GVariant *parameter, gpointer user_data)
@@ -774,7 +771,7 @@ static void action_toggle_menu_bar_activate(GSimpleAction *simple, GVariant *par
 	} else {
 		gtk_widget_show(window_handler->menu_bar);
 	}
-	window_handler->preferences->show_menu_bar = gtk_widget_get_visible(window_handler->menu_bar);
+	window_handler->application_handler->show_menu_bar = gtk_widget_get_visible(window_handler->menu_bar);
 }
 
 static void accel_toggle_menu_bar(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval, GdkModifierType modifier, gpointer user_data)
@@ -790,10 +787,10 @@ static void action_toggle_action_bar_activate(GSimpleAction *simple, GVariant *p
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
 	if (gtk_widget_get_visible(window_handler->action_bar)) {
 		gtk_widget_set_visible(window_handler->action_bar, FALSE);
-		window_handler->preferences->show_action_bar = FALSE;
+		window_handler->application_handler->show_action_bar = FALSE;
 	} else {
 		gtk_widget_set_visible(window_handler->action_bar, TRUE);
-		window_handler->preferences->show_action_bar = TRUE;
+		window_handler->application_handler->show_action_bar = TRUE;
 	}
 }
 
@@ -956,11 +953,11 @@ THE SOFTWARE.");
 static gboolean entry_replace_key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	struct cpreferences *preferences = window_handler->preferences;
+	struct capplication_handler *application_handler = window_handler->application_handler;
 	if (event->keyval == GDK_KEY_Escape) {
 		gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);
 		gtk_widget_set_visible(GTK_WIDGET(window_handler->replace_bar), FALSE);
-		if (preferences->show_action_bar == FALSE) {
+		if (application_handler->show_action_bar == FALSE) {
 			gtk_widget_hide(GTK_WIDGET(window_handler->action_bar));
 		}
 		gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
@@ -980,7 +977,7 @@ static gboolean entry_replace_key_press_event(GtkWidget *widget, GdkEventKey *ev
 static gboolean entry_search_key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	struct cpreferences *preferences = window_handler->preferences;
+	struct capplication_handler *application_handler = window_handler->application_handler;
 	gint current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(window_handler->notebook));
 	
 	gint pages_count = gtk_notebook_get_n_pages(GTK_NOTEBOOK(window_handler->notebook));
@@ -1003,7 +1000,7 @@ static gboolean entry_search_key_press_event(GtkWidget *widget, GdkEventKey *eve
 	
 	if (event->keyval == GDK_KEY_Escape) {
 		gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);
-		if (preferences->show_action_bar == FALSE) {
+		if (application_handler->show_action_bar == FALSE) {
 			gtk_widget_hide(GTK_WIDGET(window_handler->action_bar));
 		}
 		if (buffer_ref) {
@@ -1155,7 +1152,7 @@ static void button_close_tab_clicked(GtkWidget *widget, gpointer user_data)
 struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, const gchar *file_name, const gchar *text)
 {
 	g_printf("MM Creating new page.\n");
-	struct cpreferences *preferences = window_handler->preferences;
+	struct capplication_handler *application_handler = window_handler->application_handler;
 	lua_State* lua = window_handler->application_handler->lua;
 	struct cbuffer_ref *buffer_ref = (struct cbuffer_ref *)malloc(sizeof(struct cbuffer_ref));
 	buffer_ref->file_name = g_string_new(file_name);
@@ -1163,14 +1160,14 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, const gc
 	buffer_ref->source_view = gtk_source_view_new();
 	gtk_widget_grab_focus(buffer_ref->source_view);
 	gtk_source_view_set_background_pattern(GTK_SOURCE_VIEW(buffer_ref->source_view), GTK_SOURCE_BACKGROUND_PATTERN_TYPE_GRID);
-	gtk_source_view_set_show_line_marks(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_line_marks);
-	gtk_source_view_set_show_line_numbers(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_line_numbers);
-	gtk_source_view_set_show_right_margin(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->show_right_margin);
-	gtk_source_view_set_tab_width(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->tab_width);
-	gtk_source_view_set_auto_indent(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->auto_indent);
+	gtk_source_view_set_show_line_marks(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->show_line_marks);
+	gtk_source_view_set_show_line_numbers(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->show_line_numbers);
+	gtk_source_view_set_show_right_margin(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->show_right_margin);
+	gtk_source_view_set_tab_width(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->tab_width);
+	gtk_source_view_set_auto_indent(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->auto_indent);
 	gtk_source_buffer_set_highlight_matching_brackets(GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view))),
-		preferences->highlight_matching_brackets);
-	gtk_source_view_set_highlight_current_line(GTK_SOURCE_VIEW(buffer_ref->source_view), preferences->highlight_current_line);
+		application_handler->highlight_matching_brackets);
+	gtk_source_view_set_highlight_current_line(GTK_SOURCE_VIEW(buffer_ref->source_view), application_handler->highlight_current_line);
 	
 	gtk_text_buffer_set_text(gtk_text_view_get_buffer(GTK_TEXT_VIEW(buffer_ref->source_view)), text, -1);
 	
@@ -1178,7 +1175,7 @@ struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, const gc
 	GtkCssProvider *css_provider = gtk_css_provider_new();
 	
 	GString *css_string = g_string_new("GtkSourceView { font: ");
-	css_string = g_string_append(css_string, preferences->editor_font->str);
+	css_string = g_string_append(css_string, application_handler->editor_font->str);
 	css_string = g_string_append(css_string, ";}");
 	
 	gtk_css_provider_load_from_data(css_provider,
@@ -1470,148 +1467,148 @@ static void button_replace_all_clicked(GtkWidget *widget, gpointer user_data)
 static void window_destroy(GtkWidget *widget, gpointer user_data)
 {
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)user_data;
-	struct cpreferences *preferences = window_handler->preferences;
+	struct capplication_handler *application_handler = window_handler->application_handler;
 	g_printf("MM Closing main window.\n");
 	
-	const gchar *scheme_id = gtk_source_style_scheme_get_id(preferences->scheme);
+	const gchar *scheme_id = gtk_source_style_scheme_get_id(application_handler->scheme);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"general",
 		"start_new_page",
-		preferences->start_new_page);
+		application_handler->start_new_page);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"general",
 		"use_decoration",
-		preferences->use_decoration);
+		application_handler->use_decoration);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"general",
 		"use_custom_gtk_theme",
-		preferences->use_custom_gtk_theme);
+		application_handler->use_custom_gtk_theme);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"general",
 		"show_menu_bar",
-		preferences->show_menu_bar);
+		application_handler->show_menu_bar);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"general",
 		"show_tool_bar",
-		preferences->show_tool_bar);
+		application_handler->show_tool_bar);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"general",
 		"show_action_bar",
-		preferences->show_action_bar);
+		application_handler->show_action_bar);
 	
-	g_key_file_set_string(preferences->configuration_file,
+	g_key_file_set_string(application_handler->configuration_file,
 		"general",
 		"gtk_theme",
-		preferences->gtk_theme);
+		application_handler->gtk_theme);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"general",
 		"use_custom_gtk_theme",
-		preferences->use_custom_gtk_theme);
+		application_handler->use_custom_gtk_theme);
 	
-	g_key_file_set_integer(preferences->configuration_file,
+	g_key_file_set_integer(application_handler->configuration_file,
 		"general",
 		"tabs_position",
-		preferences->tabs_position);
+		application_handler->tabs_position);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"show_line_numbers",
-		preferences->show_line_numbers);
+		application_handler->show_line_numbers);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"show_map",
-		preferences->show_map);
+		application_handler->show_map);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"highlight_current_line",
-		preferences->highlight_current_line);
+		application_handler->highlight_current_line);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"highlight_matching_brackets",
-		preferences->highlight_matching_brackets);
+		application_handler->highlight_matching_brackets);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"show_line_marks",
-		preferences->show_line_marks);
+		application_handler->show_line_marks);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"auto_indent",
-		preferences->auto_indent);
+		application_handler->auto_indent);
 	
-	g_key_file_set_integer(preferences->configuration_file,
+	g_key_file_set_integer(application_handler->configuration_file,
 		"editor",
 		"tab_width",
-		preferences->tab_width);
+		application_handler->tab_width);
 	
-	g_key_file_set_string(preferences->configuration_file,
+	g_key_file_set_string(application_handler->configuration_file,
 		"editor",
 		"scheme_id",
 		scheme_id);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"show_right_margin",
-		preferences->show_right_margin);
+		application_handler->show_right_margin);
 	
-	g_key_file_set_integer(preferences->configuration_file,
+	g_key_file_set_integer(application_handler->configuration_file,
 		"editor",
 		"right_margin_position",
-		preferences->right_margin_position);
+		application_handler->right_margin_position);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"show_grid",
-		preferences->show_grid);
+		application_handler->show_grid);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"wrap_lines",
-		preferences->wrap_lines);
+		application_handler->wrap_lines);
 	
-	g_key_file_set_string(preferences->configuration_file,
+	g_key_file_set_string(application_handler->configuration_file,
 		"editor",
 		"font",
-		preferences->editor_font->str);
+		application_handler->editor_font->str);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"draw_spaces_space",
-		preferences->draw_spaces_space);
+		application_handler->draw_spaces_space);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"draw_spaces_leading",
-		preferences->draw_spaces_leading);
+		application_handler->draw_spaces_leading);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"draw_spaces_newline",
-		preferences->draw_spaces_newline);
+		application_handler->draw_spaces_newline);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"draw_spaces_tab",
-		preferences->draw_spaces_tab);
+		application_handler->draw_spaces_tab);
 	
-	g_key_file_set_boolean(preferences->configuration_file,
+	g_key_file_set_boolean(application_handler->configuration_file,
 		"editor",
 		"draw_spaces_trailing",
-		preferences->draw_spaces_trailing);
+		application_handler->draw_spaces_trailing);
 	
-	if (preferences->configuration_file_path) {
-		if (g_key_file_save_to_file(preferences->configuration_file, preferences->configuration_file_path->str, NULL)) {
+	if (application_handler->configuration_file_path) {
+		if (g_key_file_save_to_file(application_handler->configuration_file, application_handler->configuration_file_path->str, NULL)) {
 			g_printf("MM Configuration saved.\n");
 		}
 	} else {
@@ -1651,13 +1648,12 @@ static void notebook_switch_page(GtkNotebook *notebook, GtkWidget *page, guint p
 		struct cbuffer_ref *buffer_ref = NULL;
 		buffer_ref = g_object_get_data(G_OBJECT(scrolled_window), "buffer_ref");
 		if (buffer_ref) {
-			window_handler->preferences->last_path = g_string_assign(window_handler->preferences->last_path, buffer_ref->file_name->str);
+			window_handler->application_handler->last_path = g_string_assign(window_handler->application_handler->last_path, buffer_ref->file_name->str);
 			
-			char *i = strrchr(window_handler->preferences->last_path->str, '/');
+			char *i = strrchr(window_handler->application_handler->last_path->str, '/');
 			if (i) {
-				window_handler->preferences->last_path = g_string_set_size(window_handler->preferences->last_path, i - window_handler->preferences->last_path->str);
+				window_handler->application_handler->last_path = g_string_set_size(window_handler->application_handler->last_path, i - window_handler->application_handler->last_path->str);
 			}
-			//g_printf("PATH %i TO \"%s\"\n\n\n", page_num, window_handler->preferences->last_path->str);
 			
 			gtk_header_bar_set_subtitle(GTK_HEADER_BAR(window_handler->header_bar), buffer_ref->file_name->str);
 			lua_getglobal(lua, "editor");
@@ -1771,7 +1767,7 @@ static gboolean window_drag_drop(GtkWidget *widget, GdkDragContext *context, gin
 	return result;
 }
 
-void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences *preferences)
+void initialize_lua(struct cwindow_handler *window_handler, struct capplication_handler *application_handler)
 {
 	g_printf("MM Initializing Lua.\n");
 	window_handler->application_handler->lua = luaL_newstate();
@@ -1828,8 +1824,8 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 		lua_settable(lua, -3);
 		
 		lua_pushstring(lua, "configuration_directory");
-		if ( preferences->program_path) {
-			lua_pushstring(lua, preferences->program_path->str);
+		if (application_handler->program_path) {
+			lua_pushstring(lua, application_handler->program_path->str);
 		} else {
 			lua_pushstring(lua, "");
 		}
@@ -1839,9 +1835,9 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 		lua_pushlightuserdata(lua, window_handler->accelerator_group);
 		lua_settable(lua, -3);
 		
-		if (preferences->program_path) {
+		if (application_handler->program_path) {
 			lua_pushstring(lua, "config_path");
-			lua_pushstring(lua, preferences->program_path->str);
+			lua_pushstring(lua, application_handler->program_path->str);
 			lua_settable(lua, -3);
 		}
 		
@@ -1855,8 +1851,8 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 	g_printf("MM Loading base extension.\n");
 	// Load base script.
 	GString *base_full_name = NULL;
-	if (preferences->program_path) {
-		base_full_name = g_string_new(preferences->program_path->str);
+	if (application_handler->program_path) {
+		base_full_name = g_string_new(application_handler->program_path->str);
 		base_full_name = g_string_append(base_full_name, "/base.lua");
 	}
 	if (base_full_name) {
@@ -1890,9 +1886,9 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 	}
 	
 	// Load extension scripts.
-	if (preferences->extension_path) {
+	if (application_handler->extension_path) {
 		g_printf("MM Loading extensions.\n");
-		GDir *dir = g_dir_open(preferences->extension_path->str,
+		GDir *dir = g_dir_open(application_handler->extension_path->str,
 			0,
 			NULL);
 		if (dir) {
@@ -1900,7 +1896,7 @@ void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences 
 			const gchar *ent = g_dir_read_name(dir);
 			while (ent != NULL) {
 				g_printf("-> Directory \"%s\".\n", ent);
-				GString *source_full_name = g_string_new(preferences->extension_path->str);
+				GString *source_full_name = g_string_new(application_handler->extension_path->str);
 				source_full_name = g_string_append(source_full_name, "/");
 				source_full_name = g_string_append(source_full_name, ent);
 				if (g_file_test(source_full_name->str, G_FILE_TEST_IS_REGULAR)) {
@@ -2243,31 +2239,28 @@ static GMenu *create_model(struct cwindow_handler *window_handler)
 	return menu_model;
 }
 
-struct cwindow_handler *alloc_window_handler(struct capplication_handler *application_handler, struct cpreferences *preferences)
+struct cwindow_handler *alloc_window_handler(struct capplication_handler *application_handler)
 {
 	g_printf("MM Creating main window.\n");
 	struct cwindow_handler *window_handler = (struct cwindow_handler *)malloc(sizeof(struct cwindow_handler));
 	window_handler->application_handler = application_handler;
-	window_handler->preferences = preferences;
 	window_handler->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_title(GTK_WINDOW(window_handler->window), "Love Text");
+	gtk_window_set_icon_name(GTK_WINDOW(window_handler->window), "lovetext");
+	gtk_window_set_default_size(GTK_WINDOW(window_handler->window), 400, 400);
+	
 	window_handler->box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	window_handler->revealer = NULL;
 	
 	window_handler->drag_and_drop = FALSE;
-	gtk_window_set_icon_name(GTK_WINDOW(window_handler->window), "lovetext");
-	gtk_window_set_title(GTK_WINDOW(window_handler->window), "Love Text");
-	gtk_widget_set_size_request(GTK_WIDGET(window_handler->window), 420, 380);
 	g_signal_connect(window_handler->window, "destroy", G_CALLBACK(window_destroy), window_handler);
 	
 	// Header bar.
 	window_handler->header_bar = gtk_header_bar_new();
-	gtk_header_bar_set_title(GTK_HEADER_BAR(window_handler->header_bar), "Love Text");
-	gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(window_handler->header_bar),
-		"close,maximize,minimize:menu");
+	gtk_window_set_titlebar(GTK_WINDOW(window_handler->window), GTK_WIDGET(window_handler->header_bar));
+	//gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(window_handler->header_bar),
+	//	"close,maximize,minimize:menu");
 	gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(window_handler->header_bar), TRUE);
-	if (preferences->use_decoration) {
-		gtk_window_set_titlebar(GTK_WINDOW(window_handler->window), GTK_WIDGET(window_handler->header_bar));
-	}
+	gtk_header_bar_set_title(GTK_HEADER_BAR(window_handler->header_bar), "Love Text");
 	
 	// Main button.
 	window_handler->main_button = gtk_menu_button_new();
@@ -2285,27 +2278,26 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	
 	gtk_widget_set_halign(GTK_WIDGET(window_handler->main_button), GTK_ALIGN_FILL);
 	
+	// Main button.
+	GtkWidget *button_preferences = gtk_button_new();
+	g_signal_connect(button_preferences, "clicked", G_CALLBACK(button_preferences_clicked), window_handler);
+	gtk_header_bar_pack_end(GTK_HEADER_BAR(window_handler->header_bar), GTK_WIDGET(button_preferences));
+	icon = g_themed_icon_new("preferences-system-symbolic");
+	child = gtk_image_new_from_gicon(icon, GTK_ICON_SIZE_BUTTON);
+	g_object_unref(icon);
+	gtk_container_add(GTK_CONTAINER(button_preferences), GTK_WIDGET(child));
+	gtk_widget_set_halign(GTK_WIDGET(button_preferences), GTK_ALIGN_FILL);
+	
 	// Main menu model.
 	GMenu *menu_model = create_model(window_handler);
 	
 	window_handler->menu_model = menu_model;
-	if (preferences->use_decoration == FALSE) {
-		gtk_application_set_menubar(GTK_APPLICATION(application_handler->application), G_MENU_MODEL(window_handler->menu_model));
-	}
 	
 	// Main popover.
 	window_handler->main_popover = gtk_popover_new_from_model(GTK_WIDGET(window_handler->main_button), G_MENU_MODEL(menu_model));
 	gtk_popover_set_modal(GTK_POPOVER(window_handler->main_popover), TRUE);
 	gtk_popover_set_relative_to(GTK_POPOVER(window_handler->main_popover), GTK_WIDGET(window_handler->main_button));
 	gtk_menu_button_set_popover(GTK_MENU_BUTTON(window_handler->main_button), window_handler->main_popover);
-	
-	// Menu bar.
-	g_printf("MM Creating menu bar.\n");
-	if (preferences->use_decoration == FALSE) {
-		GtkWidget *menu_bar = gtk_menu_bar_new_from_model(G_MENU_MODEL(menu_model));
-		window_handler->menu_bar = menu_bar;
-		gtk_box_pack_start(GTK_BOX(window_handler->box), window_handler->menu_bar, FALSE, TRUE, 0);
-	}
 	
 	// Clipboard.
 	window_handler->clipboard = NULL;
@@ -2411,7 +2403,7 @@ struct cwindow_handler *alloc_window_handler(struct capplication_handler *applic
 	
 	gtk_container_add(GTK_CONTAINER(window_handler->window), window_handler->box);
 	
-	window_handler->decorated = window_handler->preferences->use_decoration;
+	window_handler->decorated = window_handler->application_handler->use_decoration;
 	
 	gtk_drag_dest_set(window_handler->notebook, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_COPY);
 	gtk_drag_dest_add_text_targets(window_handler->notebook);

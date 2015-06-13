@@ -47,7 +47,7 @@ THE SOFTWARE.
 #include <lualib.h>
 #include <lauxlib.h>
 
-#define _BUILD_NUMBER_ "301427052015"
+#define _BUILD_NUMBER_ "312212062015"
 #define _PROGRAM_NAME_ "LoveText"
 #define _PROGRAM_YEAR_ "2015"
 #define _PROGRAM_VERSION_ "0.8"
@@ -69,8 +69,24 @@ struct cbuffer_ref
 	GtkSourceCompletionWords *provider_words;
 };
 
-struct cpreferences
-{
+struct capplication_handler {
+	GtkApplication *application;
+	GOptionEntry *option_entries;
+	GApplicationCommandLine *command_line;
+	struct cpreferences *preferences;
+	gchar *GUID;
+	gboolean version;
+	gchar **file_name;
+	GMenu *menu_model;
+	
+	lua_State* lua;
+	
+	gboolean help;
+	GOptionContext *option_context;
+	gchar **args;
+	gint argc;
+	
+	// Preferences.
 	GString *home_path;
 	GString *program_path;
 	GString *last_path;
@@ -117,29 +133,10 @@ struct cpreferences
 	
 	GtkStyleProvider *provider;
 	GString *editor_font;
-};
 
-struct capplication_handler {
-	GtkApplication *application;
-	GOptionEntry *option_entries;
-	GApplicationCommandLine *command_line;
-	struct cpreferences *preferences;
-	gchar *GUID;
-	gboolean version;
-	gchar **file_name;
-	GMenu *menu_model;
-	
-	lua_State* lua;
-	
-	gboolean help;
-	GOptionContext *option_context;
-	gchar **args;
-	gint argc;
 };
 
 struct capplication_handler *alloc_application_handler(GtkApplication *application);
-
-struct cpreferences *alloc_preferences(void);
 
 #endif
 

@@ -84,12 +84,11 @@ struct cwindow_handler
 	GtkAccelGroup *accelerator_group;
 	
 	GString *program_folder;
-	struct cpreferences *preferences;
 };
 
-void initialize_lua(struct cwindow_handler *window_handler, struct cpreferences *preferences);
+void initialize_lua(struct cwindow_handler *window_handler, struct capplication_handler *application_handler);
 void update_editor(struct cwindow_handler *window_handler);
-struct cwindow_handler *alloc_window_handler(struct capplication_handler *application_handler, struct cpreferences *preferences);
+struct cwindow_handler *alloc_window_handler(struct capplication_handler *application_handler);
 struct cbuffer_ref *create_page(struct cwindow_handler *window_handler, const gchar *file_name, const gchar *text);
 
 #endif

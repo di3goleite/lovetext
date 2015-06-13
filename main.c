@@ -27,12 +27,6 @@ THE SOFTWARE.
 
 #include <stdio.h>
 #include <gtk/gtk.h>
-#include <gtksourceview/gtksourceview.h>
-#include <gtksourceview/gtksourcebuffer.h>
-#include <gtksourceview/gtksourcestylescheme.h>
-#include <gtksourceview/gtksourcestyleschememanager.h>
-#include <gtksourceview/gtksourcelanguagemanager.h>
-#include <gtksourceview/gtksourcelanguage.h>
 #include <glib/gi18n.h>
 #include <locale.h>
 #include <lua.h>
@@ -50,8 +44,6 @@ int main(int argc, char *args[])
 	GtkApplication *application = gtk_application_new(NULL, 0);
 	g_application_register(G_APPLICATION(application), NULL, NULL);
 	struct capplication_handler *application_handler = alloc_application_handler(application);
-	struct cpreferences *preferences = alloc_preferences();
-	application_handler->preferences = preferences;
 	
 	// Handle option context.
 	GOptionEntry option_entries[] = {
@@ -95,23 +87,17 @@ int main(int argc, char *args[])
 	}
 	g_option_context_free(application_handler->option_context);
 	
-	GtkSettings *settings = gtk_settings_get_default();
-	if ((preferences->use_custom_gtk_theme) && (preferences->gtk_theme)) {
-		g_object_set(G_OBJECT(settings), "gtk-theme-name", preferences->gtk_theme, NULL);
-	}
-	
-	struct cwindow_handler *window_handler = alloc_window_handler(application_handler, preferences);
-	gtk_application_set_app_menu(GTK_APPLICATION(application_handler->application), G_MENU_MODEL(window_handler->menu_model));
+	struct cwindow_handler *window_handler = alloc_window_handler(application_handler);
 	if (gtk_application_prefers_app_menu(GTK_APPLICATION(application_handler->application))) {
 		//gtk_application_set_app_menu(GTK_APPLICATION(application_handler->application), G_MENU_MODEL(window_handler->menu_model));
 	}
 	gtk_application_add_window(GTK_APPLICATION(application_handler->application), GTK_WINDOW(window_handler->window));
-	gtk_window_present(GTK_WINDOW(window_handler->window));
 	gtk_widget_show_all(GTK_WIDGET(window_handler->window));
-	initialize_lua(window_handler, preferences);
-	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(window_handler->notebook), preferences->tabs_position);
-	gtk_widget_set_visible(GTK_WIDGET(window_handler->action_bar), preferences->show_action_bar);
-	//gtk_widget_set_visible(window_handler->menu_bar, preferences->show_menu_bar);
+	gtk_window_present(GTK_WINDOW(window_handler->window));
+	initialize_lua(window_handler, application_handler);
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(window_handler->notebook), application_handler->tabs_position);
+	gtk_widget_set_visible(GTK_WIDGET(window_handler->action_bar), application_handler->show_action_bar);
+	//gtk_widget_set_visible(window_handler->menu_bar, application_handler->show_menu_bar);
 	gtk_widget_set_visible(GTK_WIDGET(window_handler->search_and_replace_bar), FALSE);
 	
 	if (application_handler->file_name) {

@@ -74,11 +74,9 @@ struct cwindow_preferences_handler
 	GtkWidget *main_window_notebook;
 	
 	update_editorf update_editor;
-	
-	struct cpreferences *preferences;
 };
 
-struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capplication_handler *application_handler, struct cpreferences *preferences);
+struct cwindow_preferences_handler *alloc_window_preferences_handler(struct capplication_handler *application_handler);
 
 #endif
 
